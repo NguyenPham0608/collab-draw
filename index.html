@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collab Draw</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #fff;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .status {
+            color: #888;
+            margin-bottom: 15px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff4757;
+            transition: background 0.3s;
+        }
+
+        .status-dot.connected {
+            background: #2ed573;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+            background: #16213e;
+            padding: 12px 20px;
+            border-radius: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .toolbar label {
+            color: #fff;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input[type="color"] {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: none;
+        }
+
+        input[type="range"] {
+            width: 100px;
+            cursor: pointer;
+        }
+
+        .brush-preview {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .brush-dot {
+            border-radius: 50%;
+            background: #fff;
+        }
+
+        button {
+            background: #e94560;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #ff6b81;
+        }
+
+        .canvas-container {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        canvas {
+            display: block;
+            background: #fff;
+            cursor: crosshair;
+        }
+
+        .colors {
+            display: flex;
+            gap: 8px;
+        }
+
+        .color-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .color-btn.active {
+            border-color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🎨 Collab Draw</h1>
+    <div class="status">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Connecting...</span>
+    </div>
+
+    <div class="toolbar">
+        <div class="colors">
+            <button class="color-btn active" data-color="#000000" style="background: #000000;"></button>
+            <button class="color-btn" data-color="#e94560" style="background: #e94560;"></button>
+            <button class="color-btn" data-color="#ff9f43" style="background: #ff9f43;"></button>
+            <button class="color-btn" data-color="#2ed573" style="background: #2ed573;"></button>
+            <button class="color-btn" data-color="#3498db" style="background: #3498db;"></button>
+            <button class="color-btn" data-color="#9b59b6" style="background: #9b59b6;"></button>
+            <button class="color-btn" data-color="#ffffff"
+                style="background: #ffffff; border: 2px solid #ccc;"></button>
+        </div>
+
+        <label>
+            <input type="color" id="colorPicker" value="#000000">
+            Custom
+        </label>
+
+        <label>
+            Size
+            <input type="range" id="brushSize" min="1" max="50" value="5">
+        </label>
+
+        <div class="brush-preview">
+            <div class="brush-dot" id="brushPreview"></div>
+        </div>
+
+        <button id="clearBtn">Clear All</button>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="canvas" width="900" height="600"></canvas>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURATION - UPDATE THIS URL!
+        // ============================================
+        // Replace with your Render WebSocket URL after deploying
+        // It will look like: wss://your-app-name.onrender.com
+        const WS_URL = 'wss://YOUR-RENDER-APP-NAME.onrender.com';
+        // ============================================
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const colorPicker = document.getElementById('colorPicker');
+        const brushSize = document.getElementById('brushSize');
+        const brushPreview = document.getElementById('brushPreview');
+        const clearBtn = document.getElementById('clearBtn');
+        const colorBtns = document.querySelectorAll('.color-btn');
+
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let currentColor = '#000000';
+        let currentSize = 5;
+        let ws;
+
+        // Initialize
+        updateBrushPreview();
+        connectWebSocket();
+
+        function connectWebSocket() {
+            ws = new WebSocket(WS_URL);
+
+            ws.onopen = () => {
+                statusDot.classList.add('connected');
+                statusText.textContent = 'Connected - Draw something!';
+            };
+
+            ws.onclose = () => {
+                statusDot.classList.remove('connected');
+                statusText.textContent = 'Disconnected - Reconnecting...';
+                setTimeout(connectWebSocket, 2000);
+            };
+
+            ws.onerror = () => {
+                statusText.textContent = 'Connection error';
+            };
+
+            ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+
+                if (msg.type === 'history') {
+                    // Draw all historical strokes
+                    msg.strokes.forEach(stroke => drawStroke(stroke));
+                }
+
+                if (msg.type === 'draw') {
+                    drawStroke(msg.stroke);
+                }
+
+                if (msg.type === 'clear') {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            };
+        }
+
+        function drawStroke(stroke) {
+            ctx.beginPath();
+            ctx.moveTo(stroke.x1, stroke.y1);
+            ctx.lineTo(stroke.x2, stroke.y2);
+            ctx.strokeStyle = stroke.color;
+            ctx.lineWidth = stroke.size;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+        }
+
+        function sendStroke(x1, y1, x2, y2) {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'draw',
+                    stroke: {
+                        x1, y1, x2, y2,
+                        color: currentColor,
+                        size: currentSize
+                    }
+                }));
+            }
+        }
+
+        // Drawing events
+        function startDrawing(e) {
+            isDrawing = true;
+            [lastX, lastY] = getPos(e);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+
+            const [x, y] = getPos(e);
+
+            // Draw locally
+            drawStroke({
+                x1: lastX, y1: lastY,
+                x2: x, y2: y,
+                color: currentColor,
+                size: currentSize
+            });
+
+            // Send to server
+            sendStroke(lastX, lastY, x, y);
+
+            [lastX, lastY] = [x, y];
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+            return [x, y];
+        }
+
+        // Mouse events
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        // Touch events
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            startDrawing(e);
+        });
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            draw(e);
+        });
+        canvas.addEventListener('touchend', stopDrawing);
+
+        // Color buttons
+        colorBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                colorBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentColor = btn.dataset.color;
+                colorPicker.value = currentColor;
+                updateBrushPreview();
+            });
+        });
+
+        // Color picker
+        colorPicker.addEventListener('input', (e) => {
+            currentColor = e.target.value;
+            colorBtns.forEach(b => b.classList.remove('active'));
+            updateBrushPreview();
+        });
+
+        // Brush size
+        brushSize.addEventListener('input', (e) => {
+            currentSize = parseInt(e.target.value);
+            updateBrushPreview();
+        });
+
+        function updateBrushPreview() {
+            brushPreview.style.width = currentSize + 'px';
+            brushPreview.style.height = currentSize + 'px';
+            brushPreview.style.background = currentColor;
+        }
+
+        // Clear button
+        clearBtn.addEventListener('click', () => {
+            if (confirm('Clear the entire canvas for everyone?')) {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'clear' }));
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
