@@ -5,6 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Collab Draw</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -13,33 +16,176 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #1a1a2e;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
             min-height: 100vh;
+            color: #fff;
+        }
+
+        /* Username Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .modal {
+            background: linear-gradient(145deg, #1e1e32, #252542);
+            border-radius: 24px;
+            padding: 48px;
+            text-align: center;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+            transform: scale(1);
+            transition: transform 0.3s ease;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal-overlay.hidden .modal {
+            transform: scale(0.9);
+        }
+
+        .modal-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 36px;
+        }
+
+        .modal h2 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .modal p {
+            color: #888;
+            margin-bottom: 32px;
+            font-size: 15px;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 16px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            margin-bottom: 20px;
+        }
+
+        .modal input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+        }
+
+        .modal input::placeholder {
+            color: #555;
+        }
+
+        .modal button {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .modal button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .modal button:active {
+            transform: translateY(0);
+        }
+
+        /* Main Layout */
+        .app {
+            display: none;
+            height: 100vh;
+        }
+
+        .app.visible {
+            display: flex;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: rgba(20, 20, 35, 0.95);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
             display: flex;
             flex-direction: column;
+            backdrop-filter: blur(20px);
+        }
+
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .logo {
+            display: flex;
             align-items: center;
-            padding: 20px;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 600;
         }
 
-        h1 {
-            color: #fff;
-            margin-bottom: 10px;
-            font-weight: 300;
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
         }
 
-        .status {
-            color: #888;
-            margin-bottom: 15px;
-            font-size: 14px;
+        .connection-status {
             display: flex;
             align-items: center;
             gap: 8px;
+            margin-top: 16px;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            font-size: 13px;
+            color: #888;
         }
 
         .status-dot {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             background: #ff4757;
             transition: background 0.3s;
@@ -47,47 +193,211 @@
 
         .status-dot.connected {
             background: #2ed573;
+            box-shadow: 0 0 10px rgba(46, 213, 115, 0.5);
         }
 
+        /* Users Section */
+        .users-section {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #666;
+            margin-bottom: 16px;
+        }
+
+        .users-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            transition: background 0.2s;
+        }
+
+        .user-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .user-item.me {
+            background: rgba(102, 126, 234, 0.15);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .user-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-status {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .user-color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        /* Toolbar */
         .toolbar {
             display: flex;
-            gap: 15px;
             align-items: center;
-            margin-bottom: 15px;
-            background: #16213e;
-            padding: 12px 20px;
-            border-radius: 12px;
+            gap: 20px;
+            padding: 16px 24px;
+            background: rgba(20, 20, 35, 0.8);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
             flex-wrap: wrap;
-            justify-content: center;
         }
 
-        .toolbar label {
-            color: #fff;
-            font-size: 14px;
+        .tool-group {
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
-        input[type="color"] {
-            width: 40px;
-            height: 40px;
-            border: none;
-            border-radius: 8px;
+        .tool-group-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-right: 4px;
+        }
+
+        .color-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 3px solid transparent;
             cursor: pointer;
-            background: none;
+            transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+            position: relative;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.15);
+        }
+
+        .color-btn.active {
+            border-color: #fff;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+        }
+
+        .color-picker-wrapper {
+            position: relative;
+        }
+
+        .color-picker-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.2s;
+            background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red);
+        }
+
+        .color-picker-btn:hover {
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+
+        input[type="color"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .divider {
+            width: 1px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 0 8px;
+        }
+
+        .size-slider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         input[type="range"] {
-            width: 100px;
+            width: 120px;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
             cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
         }
 
         .brush-preview {
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: #fff;
+            background: rgba(255, 255, 255, 0.1);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -95,28 +405,68 @@
 
         .brush-dot {
             border-radius: 50%;
-            background: #fff;
+            transition: all 0.15s;
         }
 
-        button {
-            background: #e94560;
-            color: #fff;
-            border: none;
+        .btn {
             padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
+            border: none;
+            border-radius: 10px;
             font-size: 14px;
-            transition: background 0.2s;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        button:hover {
-            background: #ff6b81;
+        .btn-danger {
+            background: rgba(255, 71, 87, 0.15);
+            color: #ff4757;
+            border: 1px solid rgba(255, 71, 87, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: rgba(255, 71, 87, 0.25);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .toolbar-spacer {
+            flex: 1;
+        }
+
+        /* Canvas Area */
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background:
+                radial-gradient(circle at 50% 50%, rgba(102, 126, 234, 0.03) 0%, transparent 50%),
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 20px 20px, 20px 20px;
+            overflow: auto;
         }
 
         .canvas-container {
-            border-radius: 12px;
+            border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            box-shadow:
+                0 25px 80px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
         }
 
         canvas {
@@ -125,79 +475,128 @@
             cursor: crosshair;
         }
 
-        .colors {
-            display: flex;
-            gap: 8px;
+        /* Responsive */
+        @media (max-width: 900px) {
+            .sidebar {
+                display: none;
+            }
         }
 
-        .color-btn {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            border: 3px solid transparent;
-            cursor: pointer;
-            transition: transform 0.2s, border-color 0.2s;
-        }
+        @media (max-width: 600px) {
+            .toolbar {
+                padding: 12px;
+                gap: 12px;
+            }
 
-        .color-btn:hover {
-            transform: scale(1.1);
-        }
+            .tool-group-label {
+                display: none;
+            }
 
-        .color-btn.active {
-            border-color: #fff;
+            .canvas-area {
+                padding: 12px;
+            }
         }
     </style>
 </head>
 
 <body>
-    <h1>🎨 Collab Draw</h1>
-    <div class="status">
-        <div class="status-dot" id="statusDot"></div>
-        <span id="statusText">Connecting...</span>
+    <!-- Username Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-icon">🎨</div>
+            <h2>Welcome to Collab Draw</h2>
+            <p>Enter your name to start drawing with others</p>
+            <input type="text" id="usernameInput" placeholder="Your name..." maxlength="20" autocomplete="off">
+            <button id="joinBtn">Start Drawing</button>
+        </div>
     </div>
 
-    <div class="toolbar">
-        <div class="colors">
-            <button class="color-btn active" data-color="#000000" style="background: #000000;"></button>
-            <button class="color-btn" data-color="#e94560" style="background: #e94560;"></button>
-            <button class="color-btn" data-color="#ff9f43" style="background: #ff9f43;"></button>
-            <button class="color-btn" data-color="#2ed573" style="background: #2ed573;"></button>
-            <button class="color-btn" data-color="#3498db" style="background: #3498db;"></button>
-            <button class="color-btn" data-color="#9b59b6" style="background: #9b59b6;"></button>
-            <button class="color-btn" data-color="#ffffff"
-                style="background: #ffffff; border: 2px solid #ccc;"></button>
-        </div>
+    <!-- Main App -->
+    <div class="app" id="app">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">🎨</div>
+                    <span>Collab Draw</span>
+                </div>
+                <div class="connection-status">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Connecting...</span>
+                </div>
+            </div>
 
-        <label>
-            <input type="color" id="colorPicker" value="#000000">
-            Custom
-        </label>
+            <div class="users-section">
+                <div class="section-title">Online Now — <span id="userCount">0</span></div>
+                <div class="users-list" id="usersList"></div>
+            </div>
+        </aside>
 
-        <label>
-            Size
-            <input type="range" id="brushSize" min="1" max="50" value="5">
-        </label>
+        <main class="main-content">
+            <div class="toolbar">
+                <div class="tool-group">
+                    <span class="tool-group-label">Color</span>
+                    <button class="color-btn active" data-color="#1a1a2e" style="background: #1a1a2e;"></button>
+                    <button class="color-btn" data-color="#ff4757" style="background: #ff4757;"></button>
+                    <button class="color-btn" data-color="#ff9f43" style="background: #ff9f43;"></button>
+                    <button class="color-btn" data-color="#2ed573" style="background: #2ed573;"></button>
+                    <button class="color-btn" data-color="#3498db" style="background: #3498db;"></button>
+                    <button class="color-btn" data-color="#9b59b6" style="background: #9b59b6;"></button>
+                    <button class="color-btn" data-color="#ffffff"
+                        style="background: #ffffff; border: 1px solid #ddd;"></button>
+                    <div class="color-picker-wrapper">
+                        <div class="color-picker-btn"></div>
+                        <input type="color" id="colorPicker" value="#1a1a2e">
+                    </div>
+                </div>
 
-        <div class="brush-preview">
-            <div class="brush-dot" id="brushPreview"></div>
-        </div>
+                <div class="divider"></div>
 
-        <button id="clearBtn">Clear All</button>
-    </div>
+                <div class="tool-group">
+                    <span class="tool-group-label">Size</span>
+                    <div class="size-slider">
+                        <input type="range" id="brushSize" min="1" max="50" value="5">
+                        <div class="brush-preview">
+                            <div class="brush-dot" id="brushPreview"></div>
+                        </div>
+                    </div>
+                </div>
 
-    <div class="canvas-container">
-        <canvas id="canvas" width="900" height="600"></canvas>
+                <div class="toolbar-spacer"></div>
+
+                <button class="btn btn-secondary" id="downloadBtn">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M8 1v10M4 8l4 4 4-4M2 14h12" />
+                    </svg>
+                    Save
+                </button>
+                <button class="btn btn-danger" id="clearBtn">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M2 4h12M5 4V2h6v2M6 7v6M10 7v6M3 4l1 10h8l1-10" />
+                    </svg>
+                    Clear All
+                </button>
+            </div>
+
+            <div class="canvas-area">
+                <div class="canvas-container">
+                    <canvas id="canvas" width="1000" height="700"></canvas>
+                </div>
+            </div>
+        </main>
     </div>
 
     <script>
         // ============================================
-        // CONFIGURATION - UPDATE THIS URL!
+        // CONFIGURATION
         // ============================================
-        // Replace with your Render WebSocket URL after deploying
-        // It will look like: wss://your-app-name.onrender.com
-        const WS_URL = 'wss://collab-draw-backend-86k5.onrender.com/';
+        const WS_URL = 'wss://collab-draw-backend-86k5.onrender.com';
         // ============================================
 
+        // Elements
+        const modalOverlay = document.getElementById('modalOverlay');
+        const usernameInput = document.getElementById('usernameInput');
+        const joinBtn = document.getElementById('joinBtn');
+        const app = document.getElementById('app');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const statusDot = document.getElementById('statusDot');
@@ -206,30 +605,80 @@
         const brushSize = document.getElementById('brushSize');
         const brushPreview = document.getElementById('brushPreview');
         const clearBtn = document.getElementById('clearBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
         const colorBtns = document.querySelectorAll('.color-btn');
+        const usersList = document.getElementById('usersList');
+        const userCount = document.getElementById('userCount');
 
+        // State
         let isDrawing = false;
         let lastX = 0;
         let lastY = 0;
-        let currentColor = '#000000';
+        let currentColor = '#1a1a2e';
         let currentSize = 5;
         let ws;
+        let myId = null;
+        let myUsername = '';
+        let users = {};
+
+        // Color palette for user avatars
+        const avatarColors = [
+            '#667eea', '#764ba2', '#ff6b6b', '#4ecdc4', '#45b7d1',
+            '#96ceb4', '#ffeaa7', '#dfe6e9', '#fd79a8', '#00b894'
+        ];
+
+        function getAvatarColor(id) {
+            let hash = 0;
+            for (let i = 0; i < id.length; i++) {
+                hash = id.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return avatarColors[Math.abs(hash) % avatarColors.length];
+        }
+
+        function getInitials(name) {
+            return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+        }
 
         // Initialize
         updateBrushPreview();
-        connectWebSocket();
+        usernameInput.focus();
+
+        // Join button
+        joinBtn.addEventListener('click', joinRoom);
+        usernameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') joinRoom();
+        });
+
+        function joinRoom() {
+            const name = usernameInput.value.trim();
+            if (!name) {
+                usernameInput.focus();
+                return;
+            }
+            myUsername = name;
+            modalOverlay.classList.add('hidden');
+            app.classList.add('visible');
+            connectWebSocket();
+        }
 
         function connectWebSocket() {
             ws = new WebSocket(WS_URL);
 
             ws.onopen = () => {
                 statusDot.classList.add('connected');
-                statusText.textContent = 'Connected - Draw something!';
+                statusText.textContent = 'Connected';
+
+                // Send join message with username
+                ws.send(JSON.stringify({
+                    type: 'join',
+                    username: myUsername,
+                    color: currentColor
+                }));
             };
 
             ws.onclose = () => {
                 statusDot.classList.remove('connected');
-                statusText.textContent = 'Disconnected - Reconnecting...';
+                statusText.textContent = 'Reconnecting...';
                 setTimeout(connectWebSocket, 2000);
             };
 
@@ -240,9 +689,31 @@
             ws.onmessage = (event) => {
                 const msg = JSON.parse(event.data);
 
+                if (msg.type === 'init') {
+                    myId = msg.id;
+                    users = msg.users;
+                    updateUsersList();
+                }
+
                 if (msg.type === 'history') {
-                    // Draw all historical strokes
                     msg.strokes.forEach(stroke => drawStroke(stroke));
+                }
+
+                if (msg.type === 'userJoined') {
+                    users[msg.id] = { username: msg.username, color: msg.color };
+                    updateUsersList();
+                }
+
+                if (msg.type === 'userLeft') {
+                    delete users[msg.id];
+                    updateUsersList();
+                }
+
+                if (msg.type === 'userColorChanged') {
+                    if (users[msg.id]) {
+                        users[msg.id].color = msg.color;
+                        updateUsersList();
+                    }
                 }
 
                 if (msg.type === 'draw') {
@@ -253,6 +724,30 @@
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                 }
             };
+        }
+
+        function updateUsersList() {
+            const ids = Object.keys(users);
+            userCount.textContent = ids.length;
+
+            usersList.innerHTML = ids.map(id => {
+                const user = users[id];
+                const isMe = id === myId;
+                const avatarColor = getAvatarColor(id);
+
+                return `
+                    <div class="user-item ${isMe ? 'me' : ''}">
+                        <div class="user-avatar" style="background: ${avatarColor}">
+                            ${getInitials(user.username)}
+                        </div>
+                        <div class="user-info">
+                            <div class="user-name">${user.username}${isMe ? ' (you)' : ''}</div>
+                            <div class="user-status">Drawing</div>
+                        </div>
+                        <div class="user-color-dot" style="background: ${user.color}"></div>
+                    </div>
+                `;
+            }).join('');
         }
 
         function drawStroke(stroke) {
@@ -267,7 +762,7 @@
         }
 
         function sendStroke(x1, y1, x2, y2) {
-            if (ws.readyState === WebSocket.OPEN) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({
                     type: 'draw',
                     stroke: {
@@ -290,7 +785,6 @@
 
             const [x, y] = getPos(e);
 
-            // Draw locally
             drawStroke({
                 x1: lastX, y1: lastY,
                 x2: x, y2: y,
@@ -298,9 +792,7 @@
                 size: currentSize
             });
 
-            // Send to server
             sendStroke(lastX, lastY, x, y);
-
             [lastX, lastY] = [x, y];
         }
 
@@ -310,8 +802,10 @@
 
         function getPos(e) {
             const rect = canvas.getBoundingClientRect();
-            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = ((e.touches ? e.touches[0].clientX : e.clientX) - rect.left) * scaleX;
+            const y = ((e.touches ? e.touches[0].clientY : e.clientY) - rect.top) * scaleY;
             return [x, y];
         }
 
@@ -340,6 +834,7 @@
                 currentColor = btn.dataset.color;
                 colorPicker.value = currentColor;
                 updateBrushPreview();
+                sendColorChange();
             });
         });
 
@@ -348,7 +843,17 @@
             currentColor = e.target.value;
             colorBtns.forEach(b => b.classList.remove('active'));
             updateBrushPreview();
+            sendColorChange();
         });
+
+        function sendColorChange() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'colorChange',
+                    color: currentColor
+                }));
+            }
+        }
 
         // Brush size
         brushSize.addEventListener('input', (e) => {
@@ -357,18 +862,27 @@
         });
 
         function updateBrushPreview() {
-            brushPreview.style.width = currentSize + 'px';
-            brushPreview.style.height = currentSize + 'px';
+            const size = Math.max(4, currentSize);
+            brushPreview.style.width = size + 'px';
+            brushPreview.style.height = size + 'px';
             brushPreview.style.background = currentColor;
         }
 
         // Clear button
         clearBtn.addEventListener('click', () => {
             if (confirm('Clear the entire canvas for everyone?')) {
-                if (ws.readyState === WebSocket.OPEN) {
+                if (ws && ws.readyState === WebSocket.OPEN) {
                     ws.send(JSON.stringify({ type: 'clear' }));
                 }
             }
+        });
+
+        // Download button
+        downloadBtn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'collab-draw.png';
+            link.href = canvas.toDataURL();
+            link.click();
         });
     </script>
 </body>
