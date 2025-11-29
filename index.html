@@ -4,136 +4,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Siege - Collaborative Drawing Battle</title>
+    <title>Ink Wars - 2v2 Tactical Drawing</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@500;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <!-- Username Modal -->
-    <div class="modal-overlay" id="usernameModal">
-        <div class="modal">
-            <div class="modal-icon">⚔️</div>
-            <h2>SIEGE</h2>
-            <p class="tagline">Draw to Attack. Draw to Defend.</p>
-            <input type="text" id="usernameInput" placeholder="Enter your callsign..." maxlength="15" autocomplete="off">
-            <button class="btn-primary" id="enterLobbyBtn">ENTER BATTLEFIELD</button>
-        </div>
-    </div>
-
-    <!-- Room Selection Modal -->
-    <div class="modal-overlay hidden" id="roomModal">
-        <div class="modal room-modal">
-            <h2>SELECT ARENA</h2>
-            <p class="tagline">Choose your battleground (2v2)</p>
-            <div class="rooms-grid" id="roomsGrid">
-                <!-- Rooms will be populated by JS -->
+    <!-- Landing / Queue Screen -->
+    <div class="screen" id="menuScreen">
+        <div class="menu-container">
+            <div class="logo-section">
+                <div class="logo-icon">⚔️</div>
+                <h1 class="game-title">INK WARS</h1>
+                <p class="tagline">2v2 Tactical Line Combat</p>
             </div>
-            <div class="room-legend">
-                <span class="legend-item"><span class="dot red"></span> Red Team</span>
-                <span class="legend-item"><span class="dot blue"></span> Blue Team</span>
-            </div>
-        </div>
-    </div>
 
-    <!-- Main Game -->
-    <div class="game-container hidden" id="gameContainer">
-        <!-- Top HUD -->
-        <header class="game-hud">
-            <div class="hud-left">
-                <div class="team-indicator" id="teamIndicator">
-                    <span class="team-label">YOUR TEAM</span>
-                    <span class="team-name" id="teamName">---</span>
+            <div class="menu-card">
+                <input type="text" id="usernameInput" placeholder="Enter your callsign..." maxlength="15"
+                    autocomplete="off">
+                <button class="btn btn-primary" id="findMatchBtn">
+                    <span class="btn-text">Find Match</span>
+                    <span class="btn-icon">→</span>
+                </button>
+            </div>
+
+            <div class="queue-status hidden" id="queueStatus">
+                <div class="spinner"></div>
+                <span id="queueText">Searching for players...</span>
+                <span id="queueCount">0/4</span>
+            </div>
+
+            <div class="how-to-play">
+                <h3>How to Play</h3>
+                <div class="rules-grid">
+                    <div class="rule">
+                        <span class="rule-icon">🛡️</span>
+                        <span>Defenders build ink walls to protect the target</span>
+                    </div>
+                    <div class="rule">
+                        <span class="rule-icon">⚔️</span>
+                        <span>Attackers draw lines from spawn to breach the target</span>
+                    </div>
+                    <div class="rule">
+                        <span class="rule-icon">💥</span>
+                        <span>Hit enemy ink = 2 second stun</span>
+                    </div>
+                    <div class="rule">
+                        <span class="rule-icon">🔄</span>
+                        <span>Teams swap roles each round</span>
+                    </div>
                 </div>
-                <div class="role-indicator" id="roleIndicator">
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div class="screen hidden" id="gameScreen">
+        <div class="game-container">
+            <!-- Top HUD -->
+            <div class="game-hud">
+                <div class="team-score team-red">
+                    <span class="team-label">RED</span>
+                    <span class="score" id="redScore">0</span>
+                </div>
+
+                <div class="center-hud">
+                    <div class="phase-indicator" id="phaseIndicator">WAITING</div>
+                    <div class="timer" id="timer">0:00</div>
+                    <div class="round-info">Round <span id="roundNum">1</span>/4</div>
+                </div>
+
+                <div class="team-score team-blue">
+                    <span class="team-label">BLUE</span>
+                    <span class="score" id="blueScore">0</span>
+                </div>
+            </div>
+
+            <!-- Main Canvas Area -->
+            <div class="canvas-wrapper">
+                <canvas id="gameCanvas"></canvas>
+
+                <!-- Stun Overlay -->
+                <div class="stun-overlay hidden" id="stunOverlay">
+                    <span>STUNNED</span>
+                </div>
+
+                <!-- Role Indicator -->
+                <div class="role-badge" id="roleBadge">
                     <span class="role-icon">🛡️</span>
-                    <span class="role-name" id="roleName">DEFENDING</span>
+                    <span class="role-text">DEFENDING</span>
                 </div>
             </div>
 
-            <div class="hud-center">
-                <div class="scoreboard">
-                    <div class="score red-score">
-                        <span class="score-label">RED</span>
-                        <span class="score-value" id="redScore">0</span>
-                    </div>
-                    <div class="timer-container">
-                        <div class="phase-label" id="phaseLabel">WAITING</div>
-                        <div class="timer" id="timer">2:00</div>
-                        <div class="round-label">Round <span id="roundNum">0</span></div>
-                    </div>
-                    <div class="score blue-score">
-                        <span class="score-label">BLUE</span>
-                        <span class="score-value" id="blueScore">0</span>
-                    </div>
+            <!-- Bottom HUD -->
+            <div class="bottom-hud">
+                <div class="player-info">
+                    <div class="player-team" id="playerTeam">RED TEAM</div>
+                    <div class="player-name" id="playerName">Player</div>
                 </div>
-            </div>
 
-            <div class="hud-right">
                 <div class="ink-container">
-                    <span class="ink-label">INK</span>
+                    <div class="ink-label">INK</div>
                     <div class="ink-bar">
                         <div class="ink-fill" id="inkFill"></div>
                     </div>
-                    <span class="ink-value" id="inkValue">100%</span>
-                </div>
-            </div>
-        </header>
-
-        <!-- Players Panel -->
-        <aside class="players-panel" id="playersPanel">
-            <div class="panel-header">
-                <span class="panel-title">COMBATANTS</span>
-            </div>
-            <div class="team-section red-team">
-                <div class="team-header">
-                    <span class="team-icon">⚔️</span> RED TEAM
-                    <span class="attack-badge" id="redAttackBadge">ATK</span>
-                </div>
-                <div class="team-players" id="redTeamPlayers"></div>
-            </div>
-            <div class="team-section blue-team">
-                <div class="team-header">
-                    <span class="team-icon">🛡️</span> BLUE TEAM
-                    <span class="attack-badge" id="blueAttackBadge" style="display:none;">ATK</span>
-                </div>
-                <div class="team-players" id="blueTeamPlayers"></div>
-            </div>
-        </aside>
-
-        <!-- Canvas Area -->
-        <main class="battlefield">
-            <div class="canvas-wrapper">
-                <div class="spawn-zone red-spawn" id="redSpawn">
-                    <span>RED SPAWN</span>
-                </div>
-                <canvas id="gameCanvas" width="1000" height="700"></canvas>
-                <div class="crystal-container" id="crystalContainer">
-                    <div class="crystal" id="crystal">
-                        <div class="crystal-glow"></div>
-                        <span class="crystal-icon">💎</span>
+                    <div class="ink-controls">
+                        <button class="ink-type-btn active" id="permanentInkBtn" data-type="permanent">
+                            <span class="ink-type-icon">●</span>
+                            <span>Permanent</span>
+                        </button>
+                        <button class="ink-type-btn" id="fadingInkBtn" data-type="fading">
+                            <span class="ink-type-icon">◐</span>
+                            <span>Fading (50% ink)</span>
+                        </button>
                     </div>
-                    <span class="crystal-label">DEFEND</span>
+                </div>
+
+                <div class="teammates">
+                    <div class="teammate" id="teammate">
+                        <div class="teammate-avatar">?</div>
+                        <span class="teammate-name">Waiting...</span>
+                    </div>
                 </div>
             </div>
-        </main>
-
-        <!-- Brush Size Control -->
-        <div class="brush-control">
-            <span class="brush-label">SIZE</span>
-            <input type="range" id="brushSize" min="3" max="30" value="8">
-            <div class="brush-preview" id="brushPreview"></div>
         </div>
+    </div>
 
-        <!-- Game Announcements -->
-        <div class="announcement hidden" id="announcement">
-            <div class="announcement-content">
-                <div class="announcement-icon" id="announcementIcon">⚔️</div>
-                <div class="announcement-text" id="announcementText">ROUND START</div>
-                <div class="announcement-sub" id="announcementSub">Prepare for battle!</div>
+    <!-- Round Transition Overlay -->
+    <div class="overlay hidden" id="transitionOverlay">
+        <div class="transition-content">
+            <div class="transition-title" id="transitionTitle">ROUND 1</div>
+            <div class="transition-subtitle" id="transitionSubtitle">You are ATTACKING</div>
+            <div class="transition-countdown" id="transitionCountdown">3</div>
+        </div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div class="overlay hidden" id="gameOverOverlay">
+        <div class="game-over-content">
+            <div class="game-over-title" id="gameOverTitle">VICTORY</div>
+            <div class="final-scores">
+                <div class="final-score red">
+                    <span class="team-name">RED</span>
+                    <span class="score" id="finalRedScore">0</span>
+                </div>
+                <div class="vs">VS</div>
+                <div class="final-score blue">
+                    <span class="team-name">BLUE</span>
+                    <span class="score" id="finalBlueScore">0</span>
+                </div>
             </div>
+            <button class="btn btn-primary" id="playAgainBtn">Play Again</button>
         </div>
     </div>
 
