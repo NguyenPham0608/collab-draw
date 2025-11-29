@@ -33,16 +33,29 @@ const POINTS_TARGET_REACHED = 100;
 const POINTS_PER_DISTANCE = 0.5;
 const EXPLOSION_RADIUS = 25; // How much of defender line gets destroyed on collision
 
+// Coin & Powerup Constants
+const COIN_RADIUS = 18;
+const COIN_COLLECT_DISTANCE = 25;
+
+// Powerup definitions (will be received from server too)
+let POWERUPS = {
+    quickRecovery: { cost: 3, name: 'Quick Recovery', desc: 'Stun time reduced to 1s' },
+    extraInk: { cost: 4, name: 'Extra Ink', desc: '+50% ink capacity' },
+    biggerBlast: { cost: 5, name: 'Bigger Blast', desc: '+50% explosion radius' },
+    speedDraw: { cost: 3, name: 'Speed Draw', desc: 'Ink drains 30% slower' }
+};
+
 // ============================================
 // DOM ELEMENTS
 // ============================================
 const menuScreen = document.getElementById('menuScreen');
+const lobbyScreen = document.getElementById('lobbyScreen');
 const gameScreen = document.getElementById('gameScreen');
 const usernameInput = document.getElementById('usernameInput');
 const findMatchBtn = document.getElementById('findMatchBtn');
-const queueStatus = document.getElementById('queueStatus');
-const queueText = document.getElementById('queueText');
-const queueCount = document.getElementById('queueCount');
+const leaveLobbyBtn = document.getElementById('leaveLobbyBtn');
+const lobbyStatusText = document.getElementById('lobbyStatusText');
+const lobbyPlayerCount = document.getElementById('lobbyPlayerCount');
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -71,6 +84,15 @@ const finalRedScore = document.getElementById('finalRedScore');
 const finalBlueScore = document.getElementById('finalBlueScore');
 const playAgainBtn = document.getElementById('playAgainBtn');
 
+// Coin & Shop elements
+const coinCounter = document.getElementById('coinCounter');
+const coinCount = document.getElementById('coinCount');
+const shopBtn = document.getElementById('shopBtn');
+const shopOverlay = document.getElementById('shopOverlay');
+const shopContent = document.getElementById('shopContent');
+const closeShopBtn = document.getElementById('closeShopBtn');
+const activePowerupsList = document.getElementById('activePowerupsList');
+
 // ============================================
 // GAME STATE
 // ============================================
@@ -78,6 +100,7 @@ let ws = null;
 let myId = null;
 let myUsername = '';
 let myTeam = null; // 'red' or 'blue'
+let lobbyPlayers = []; // Players currently in the lobby
 let gameState = {
     phase: 'waiting', // waiting, defense, attack, transition, gameover
     round: 1,
@@ -103,6 +126,12 @@ let attackerPaths = {}; // { odeli: { points, maxDistance } }
 let remoteDrawingPaths = {}; // Track other players' current drawing in progress
 let explosionEffects = []; // Visual explosion effects
 
+// Coin & Powerup state
+let coins = [];
+let teamCoins = 0;
+let activePowerups = [];
+let coinCollectEffects = []; // Visual effects when collecting coins
+
 // Spawn points (will be set based on team)
 let mySpawnPoint = null;
 let targetPoint = { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 };
@@ -122,6 +151,8 @@ findMatchBtn.addEventListener('click', findMatch);
 usernameInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') findMatch();
 });
+
+leaveLobbyBtn.addEventListener('click', leaveLobby);
 
 playAgainBtn.addEventListener('click', () => {
     location.reload();
@@ -155,6 +186,13 @@ canvas.addEventListener('touchmove', (e) => {
 });
 canvas.addEventListener('touchend', stopDrawing);
 
+// Shop events
+shopBtn.addEventListener('click', openShop);
+closeShopBtn.addEventListener('click', closeShop);
+shopOverlay.addEventListener('click', (e) => {
+    if (e.target === shopOverlay) closeShop();
+});
+
 // ============================================
 // MATCHMAKING
 // ============================================
@@ -166,16 +204,34 @@ function findMatch() {
     }
 
     myUsername = name;
-    findMatchBtn.style.display = 'none';
-    queueStatus.classList.remove('hidden');
+
+    // Switch to lobby screen
+    menuScreen.classList.add('hidden');
+    lobbyScreen.classList.remove('hidden');
+
+    // Initialize lobby with self
+    lobbyPlayers = [{ username: myUsername, isMe: true }];
+    updateLobbyUI();
 
     connectWebSocket();
+}
+
+function leaveLobby() {
+    if (ws) {
+        ws.close();
+        ws = null;
+    }
+    lobbyPlayers = [];
+    lobbyScreen.classList.add('hidden');
+    menuScreen.classList.remove('hidden');
+    usernameInput.focus();
 }
 
 function connectWebSocket() {
     ws = new WebSocket(WS_URL);
 
     ws.onopen = () => {
+        lobbyStatusText.textContent = 'Connected! Waiting for players...';
         ws.send(JSON.stringify({
             type: 'join_queue',
             username: myUsername
@@ -183,15 +239,73 @@ function connectWebSocket() {
     };
 
     ws.onclose = () => {
-        queueText.textContent = 'Disconnected. Reconnecting...';
+        lobbyStatusText.textContent = 'Disconnected. Reconnecting...';
         setTimeout(connectWebSocket, 2000);
     };
 
     ws.onerror = () => {
-        queueText.textContent = 'Connection error';
+        lobbyStatusText.textContent = 'Connection error. Retrying...';
     };
 
     ws.onmessage = handleMessage;
+}
+
+// ============================================
+// LOBBY UI UPDATES
+// ============================================
+function updateLobbyUI() {
+    const count = lobbyPlayers.length;
+    lobbyPlayerCount.textContent = count;
+
+    // Update status text
+    if (count === 4) {
+        lobbyStatusText.textContent = 'Match found! Starting game...';
+    } else {
+        lobbyStatusText.textContent = `Waiting for ${4 - count} more player${4 - count === 1 ? '' : 's'}...`;
+    }
+
+    // Update player slots
+    // For now, we'll assign players to slots in order
+    // In a real scenario, server would tell us team assignments
+    const slots = [
+        { id: 'slot-red-0', team: 'red', index: 0 },
+        { id: 'slot-red-1', team: 'red', index: 1 },
+        { id: 'slot-blue-0', team: 'blue', index: 0 },
+        { id: 'slot-blue-1', team: 'blue', index: 1 }
+    ];
+
+    // Reset all slots first
+    slots.forEach((slot, i) => {
+        const el = document.getElementById(slot.id);
+        if (!el) return;
+
+        const player = lobbyPlayers[i];
+
+        if (player) {
+            el.classList.add('filled');
+            el.classList.toggle('you', player.isMe);
+
+            const avatar = el.querySelector('.slot-avatar');
+            const name = el.querySelector('.slot-name');
+            const status = el.querySelector('.slot-status');
+
+            avatar.textContent = player.username[0].toUpperCase();
+            avatar.classList.remove('empty');
+            name.textContent = player.username;
+            status.textContent = player.isMe ? 'You' : 'Ready';
+        } else {
+            el.classList.remove('filled', 'you');
+
+            const avatar = el.querySelector('.slot-avatar');
+            const name = el.querySelector('.slot-name');
+            const status = el.querySelector('.slot-status');
+
+            avatar.textContent = '?';
+            avatar.classList.add('empty');
+            name.textContent = 'Waiting...';
+            status.textContent = 'Empty slot';
+        }
+    });
 }
 
 // ============================================
@@ -202,7 +316,7 @@ function handleMessage(event) {
 
     switch (msg.type) {
         case 'queue_update':
-            queueCount.textContent = `${msg.count}/4`;
+            handleQueueUpdate(msg);
             break;
 
         case 'game_start':
@@ -249,7 +363,31 @@ function handleMessage(event) {
             gameState.timeRemaining = msg.time;
             updateTimerDisplay();
             break;
+
+        case 'coin_collected':
+            handleCoinCollected(msg);
+            break;
+
+        case 'powerup_purchased':
+            handlePowerupPurchased(msg);
+            break;
     }
+}
+
+function handleQueueUpdate(msg) {
+    // Server tells us how many are in queue
+    // We simulate other players joining
+    const count = msg.count;
+
+    // Keep our player, add placeholders for others
+    lobbyPlayers = [{ username: myUsername, isMe: true }];
+
+    // Add other players (we don't know their names until game starts)
+    for (let i = 1; i < count; i++) {
+        lobbyPlayers.push({ username: `Player ${i + 1}`, isMe: false });
+    }
+
+    updateLobbyUI();
 }
 
 // ============================================
@@ -261,11 +399,16 @@ function startGame(msg) {
     gameState.players = msg.players;
     gameState.scores = { red: 0, blue: 0 };
 
+    // Store powerup definitions from server
+    if (msg.powerupDefs) {
+        POWERUPS = msg.powerupDefs;
+    }
+
     // Set spawn point based on team and player index
     setSpawnPoint(msg.spawnIndex);
 
-    // Update UI
-    menuScreen.classList.add('hidden');
+    // Update UI - transition from lobby to game
+    lobbyScreen.classList.add('hidden');
     gameScreen.classList.remove('hidden');
 
     playerName.textContent = myUsername;
@@ -275,11 +418,117 @@ function startGame(msg) {
     // Update teammate display
     updateTeammateDisplay();
 
+    // Initialize coin UI
+    updateCoinUI();
+
     // Initial render
     render();
 
     // Start game loop
     requestAnimationFrame(gameLoop);
+}
+
+// ============================================
+// SHOP FUNCTIONS
+// ============================================
+function openShop() {
+    renderShopContent();
+    shopOverlay.classList.remove('hidden');
+}
+
+function closeShop() {
+    shopOverlay.classList.add('hidden');
+}
+
+function renderShopContent() {
+    const isAttacking = myTeam === gameState.attackingTeam;
+
+    let html = `<div class="shop-header">
+        <h2>⚡ POWER-UPS</h2>
+        <div class="shop-coins">🪙 ${teamCoins} coins</div>
+    </div>`;
+
+    if (!isAttacking) {
+        html += `<div class="shop-notice">Power-ups available when attacking!</div>`;
+    }
+
+    html += `<div class="powerup-grid">`;
+
+    for (const [id, powerup] of Object.entries(POWERUPS)) {
+        const owned = activePowerups.includes(id);
+        const canAfford = teamCoins >= powerup.cost;
+        const disabled = owned || !canAfford || !isAttacking;
+
+        html += `
+            <div class="powerup-card ${owned ? 'owned' : ''} ${disabled && !owned ? 'disabled' : ''}" 
+                 ${!disabled ? `onclick="buyPowerup('${id}')"` : ''}>
+                <div class="powerup-name">${powerup.name}</div>
+                <div class="powerup-desc">${powerup.desc}</div>
+                <div class="powerup-cost">
+                    ${owned ? '✓ ACTIVE' : `🪙 ${powerup.cost}`}
+                </div>
+            </div>
+        `;
+    }
+
+    html += `</div>`;
+
+    if (activePowerups.length > 0) {
+        html += `<div class="active-powerups-section">
+            <h3>Active This Round:</h3>
+            <div class="active-list">
+                ${activePowerups.map(id => `<span class="active-tag">${POWERUPS[id].name}</span>`).join('')}
+            </div>
+        </div>`;
+    }
+
+    shopContent.innerHTML = html;
+}
+
+function buyPowerup(powerupId) {
+    const powerup = POWERUPS[powerupId];
+    if (!powerup) return;
+    if (teamCoins < powerup.cost) return;
+    if (activePowerups.includes(powerupId)) return;
+
+    safeSend({
+        type: 'buy_powerup',
+        powerupId
+    });
+}
+
+function updateCoinUI() {
+    coinCount.textContent = teamCoins;
+
+    // Show/hide coin counter based on if we're attacking or about to attack
+    const isAttacking = myTeam === gameState.attackingTeam;
+    coinCounter.classList.toggle('hidden', !isAttacking && gameState.phase !== 'defense');
+
+    // Update active powerups display
+    if (activePowerups.length > 0) {
+        activePowerupsList.innerHTML = activePowerups
+            .map(id => `<div class="active-powerup-tag">${POWERUPS[id]?.name || id}</div>`)
+            .join('');
+        activePowerupsList.classList.remove('hidden');
+    } else {
+        activePowerupsList.classList.add('hidden');
+    }
+}
+
+function getEffectiveStunDuration() {
+    return activePowerups.includes('quickRecovery') ? 1000 : STUN_DURATION;
+}
+
+function getEffectiveInkMax() {
+    return activePowerups.includes('extraInk') ? INK_MAX * 1.5 : INK_MAX;
+}
+
+function getEffectiveExplosionRadius() {
+    return activePowerups.includes('biggerBlast') ? EXPLOSION_RADIUS * 1.5 : EXPLOSION_RADIUS;
+}
+
+function getEffectiveInkDrainRate() {
+    return activePowerups.includes('speedDraw') ? INK_DRAIN_RATE * 0.7 : INK_DRAIN_RATE;
 }
 
 function setSpawnPoint(index) {
@@ -325,12 +574,27 @@ function handlePhaseChange(msg) {
         remoteDrawingPaths = {};
         permanentLines = [];
         fadingLines = [];
+        coins = [];
+
+        // Reset powerups and coins for new round if we're attacking
+        if (myTeam === msg.attackingTeam) {
+            activePowerups = msg.activePowerups || [];
+            teamCoins = msg.teamCoins?.[myTeam] || 0;
+        }
     }
 
-    // Clear attack phase specific data
+    // Clear attack phase specific data and set up coins
     if (msg.phase === 'attack') {
         remoteDrawingPaths = {};
+        coins = msg.coins || [];
+
+        // Load active powerups for attacking team
+        if (myTeam === msg.attackingTeam) {
+            activePowerups = msg.activePowerups || [];
+        }
     }
+
+    updateCoinUI();
 
     // Show transition
     showTransition(msg);
@@ -442,6 +706,9 @@ function draw(e) {
     // Check collision with enemy lines (for attackers)
     const isAttacking = myTeam === gameState.attackingTeam;
     if (isAttacking && gameState.phase === 'attack') {
+        // Check for coin collection
+        checkCoinCollection(pos);
+
         const collisionPoint = checkCollisionWithDefenderLines(pos, lastPos);
         if (collisionPoint) {
             triggerStun(collisionPoint);
@@ -466,8 +733,9 @@ function draw(e) {
 
     currentPath.push(pos);
 
-    // Drain ink
-    const drainRate = inkType === 'fading' ? INK_DRAIN_RATE * FADING_INK_COST_MULTIPLIER : INK_DRAIN_RATE;
+    // Drain ink (with powerup modifier)
+    const baseRate = getEffectiveInkDrainRate();
+    const drainRate = inkType === 'fading' ? baseRate * FADING_INK_COST_MULTIPLIER : baseRate;
     ink -= drainRate * (1 / 60); // Assuming ~60fps
     ink = Math.max(0, ink);
     updateInkDisplay();
@@ -486,6 +754,32 @@ function draw(e) {
     });
 
     render();
+}
+
+function checkCoinCollection(pos) {
+    for (const coin of coins) {
+        if (coin.collected) continue;
+
+        const dist = distance(pos, coin);
+        if (dist <= COIN_COLLECT_DISTANCE) {
+            // Collect the coin locally first for immediate feedback
+            coin.collected = true;
+
+            // Create collection effect
+            coinCollectEffects.push({
+                x: coin.x,
+                y: coin.y,
+                startTime: Date.now(),
+                duration: 400
+            });
+
+            // Send to server
+            safeSend({
+                type: 'collect_coin',
+                coinId: coin.id
+            });
+        }
+    }
 }
 
 function stopDrawing() {
@@ -610,6 +904,7 @@ function explodeLineAt(linesArray, lineIndex, collisionPoint) {
     if (!line || !line.points) return;
 
     const points = line.points;
+    const explosionRadius = getEffectiveExplosionRadius();
 
     // Find all points within explosion radius and remove them
     const remainingSegments = [];
@@ -620,7 +915,7 @@ function explodeLineAt(linesArray, lineIndex, collisionPoint) {
 
         const dist = distance(points[i], collisionPoint);
 
-        if (dist > EXPLOSION_RADIUS) {
+        if (dist > explosionRadius) {
             // This point survives
             currentSegment.push(points[i]);
         } else {
@@ -653,20 +948,20 @@ function explodeLineAt(linesArray, lineIndex, collisionPoint) {
     safeSend({
         type: 'explosion',
         point: collisionPoint,
-        radius: EXPLOSION_RADIUS
+        radius: explosionRadius
     });
 
     // Create visual explosion effect
-    createExplosionEffect(collisionPoint);
+    createExplosionEffect(collisionPoint, explosionRadius);
 }
 
-function createExplosionEffect(point) {
+function createExplosionEffect(point, radius = EXPLOSION_RADIUS) {
     // Add to explosion effects array for rendering
     explosionEffects.push({
         x: point.x,
         y: point.y,
         radius: 0,
-        maxRadius: EXPLOSION_RADIUS,
+        maxRadius: radius,
         startTime: Date.now(),
         duration: 300
     });
@@ -702,11 +997,13 @@ function triggerStun(collisionPoint) {
         collisionPoint: collisionPoint
     });
 
+    const stunDuration = getEffectiveStunDuration();
+
     if (stunTimeout) clearTimeout(stunTimeout);
     stunTimeout = setTimeout(() => {
         isStunned = false;
         stunOverlay.classList.add('hidden');
-    }, STUN_DURATION);
+    }, stunDuration);
 }
 
 function resetAttackerToSpawn() {
@@ -855,6 +1152,51 @@ function handleRemoteAttackerReset(msg) {
     }
 }
 
+function handleCoinCollected(msg) {
+    // Mark coin as collected
+    const coin = coins.find(c => c.id === msg.coinId);
+    if (coin) {
+        coin.collected = true;
+
+        // Add collection effect if not already added locally
+        if (msg.playerId !== myId) {
+            coinCollectEffects.push({
+                x: coin.x,
+                y: coin.y,
+                startTime: Date.now(),
+                duration: 400
+            });
+        }
+    }
+
+    // Update team coins if it's our team
+    if (msg.team === myTeam) {
+        teamCoins = msg.teamCoins;
+        updateCoinUI();
+    }
+
+    render();
+}
+
+function handlePowerupPurchased(msg) {
+    if (msg.team === myTeam) {
+        teamCoins = msg.teamCoins;
+        activePowerups = msg.activePowerups;
+        updateCoinUI();
+
+        // Re-render shop if open
+        if (!shopOverlay.classList.contains('hidden')) {
+            renderShopContent();
+        }
+
+        // Apply ink powerup immediately if just purchased
+        if (msg.activePowerups.includes('extraInk')) {
+            const maxInk = getEffectiveInkMax();
+            ink = Math.min(ink, maxInk); // Cap current ink to new max
+        }
+    }
+}
+
 function handleTargetReachedVisual(msg) {
     // Show celebration effect
     const player = gameState.players[msg.playerId];
@@ -916,9 +1258,10 @@ function gameLoop(timestamp) {
     lastTime = timestamp;
 
     // Regenerate ink when not drawing
-    if (!isDrawing && ink < INK_MAX) {
+    const maxInk = getEffectiveInkMax();
+    if (!isDrawing && ink < maxInk) {
         ink += INK_REGEN_RATE * deltaTime;
-        ink = Math.min(INK_MAX, ink);
+        ink = Math.min(maxInk, ink);
         updateInkDisplay();
     }
 
@@ -950,6 +1293,9 @@ function render() {
 
     // Draw target
     drawTarget();
+
+    // Draw coins
+    drawCoins();
 
     // Draw connecting lines from spawn to show attack direction
     drawAttackDirectionHints();
@@ -1015,6 +1361,9 @@ function render() {
 
     // Draw explosion effects
     drawExplosionEffects();
+
+    // Draw coin collection effects
+    drawCoinCollectEffects();
 }
 
 function drawExplosionEffects() {
@@ -1056,6 +1405,88 @@ function drawExplosionEffects() {
         }
 
         return true; // Keep this explosion
+    });
+}
+
+function drawCoins() {
+    if (gameState.phase !== 'attack') return;
+
+    const now = Date.now();
+
+    for (const coin of coins) {
+        if (coin.collected) continue;
+
+        const pulse = Math.sin(now / 200 + coin.id) * 0.15 + 1;
+        const rotation = now / 1000 + coin.id;
+
+        // Outer glow
+        ctx.shadowColor = '#ffd700';
+        ctx.shadowBlur = 15;
+
+        // Coin body
+        ctx.beginPath();
+        ctx.arc(coin.x, coin.y, COIN_RADIUS * pulse, 0, Math.PI * 2);
+        const gradient = ctx.createRadialGradient(
+            coin.x - 5, coin.y - 5, 0,
+            coin.x, coin.y, COIN_RADIUS
+        );
+        gradient.addColorStop(0, '#fff7cc');
+        gradient.addColorStop(0.5, '#ffd700');
+        gradient.addColorStop(1, '#b8860b');
+        ctx.fillStyle = gradient;
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+
+        // Inner detail
+        ctx.beginPath();
+        ctx.arc(coin.x, coin.y, COIN_RADIUS * 0.7 * pulse, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(184, 134, 11, 0.5)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Dollar sign or star
+        ctx.fillStyle = '#b8860b';
+        ctx.font = `bold ${14 * pulse}px Orbitron`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('★', coin.x, coin.y);
+    }
+}
+
+function drawCoinCollectEffects() {
+    const now = Date.now();
+
+    coinCollectEffects = coinCollectEffects.filter(effect => {
+        const elapsed = now - effect.startTime;
+        if (elapsed >= effect.duration) return false;
+
+        const progress = elapsed / effect.duration;
+        const opacity = 1 - progress;
+        const scale = 1 + progress * 2;
+        const yOffset = -progress * 40;
+
+        // Rising +1 text
+        ctx.fillStyle = `rgba(255, 215, 0, ${opacity})`;
+        ctx.font = `bold ${20 * scale}px Orbitron`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('+1', effect.x, effect.y + yOffset);
+
+        // Sparkle particles
+        for (let i = 0; i < 6; i++) {
+            const angle = (i / 6) * Math.PI * 2 + progress * Math.PI;
+            const dist = 20 + progress * 30;
+            const px = effect.x + Math.cos(angle) * dist;
+            const py = effect.y + Math.sin(angle) * dist + yOffset;
+
+            ctx.beginPath();
+            ctx.arc(px, py, 3 * (1 - progress), 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 215, 0, ${opacity * 0.7})`;
+            ctx.fill();
+        }
+
+        return true;
     });
 }
 
@@ -1314,7 +1745,8 @@ function distance(p1, p2) {
 }
 
 function updateInkDisplay() {
-    inkFill.style.width = (ink / INK_MAX * 100) + '%';
+    const maxInk = getEffectiveInkMax();
+    inkFill.style.width = (ink / maxInk * 100) + '%';
 }
 
 function updateTimerDisplay() {

@@ -14,7 +14,7 @@
 </head>
 
 <body>
-    <!-- Landing / Queue Screen -->
+    <!-- Landing Screen -->
     <div class="screen" id="menuScreen">
         <div class="menu-container">
             <div class="logo-section">
@@ -32,30 +32,215 @@
                 </button>
             </div>
 
-            <div class="queue-status hidden" id="queueStatus">
-                <div class="spinner"></div>
-                <span id="queueText">Searching for players...</span>
-                <span id="queueCount">0/4</span>
+            <div class="quick-rules">
+                <div class="rule-mini">🛡️ Defend the target</div>
+                <div class="rule-mini">⚔️ Attack to breach</div>
+                <div class="rule-mini">🔄 Swap roles each round</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Waiting Room / Lobby Screen -->
+    <div class="screen hidden" id="lobbyScreen">
+        <div class="lobby-container">
+            <!-- Left Panel: Players -->
+            <div class="lobby-players-panel">
+                <div class="lobby-header">
+                    <div class="lobby-title">
+                        <span class="lobby-icon">⚔️</span>
+                        <span>BATTLE LOBBY</span>
+                    </div>
+                    <div class="lobby-status">
+                        <div class="status-pulse"></div>
+                        <span id="lobbyStatusText">Waiting for players...</span>
+                    </div>
+                </div>
+
+                <div class="player-slots">
+                    <div class="team-section team-red-section">
+                        <div class="team-header-lobby">
+                            <span class="team-icon">🔴</span>
+                            <span>RED TEAM</span>
+                        </div>
+                        <div class="player-slot" id="slot-red-0">
+                            <div class="slot-avatar empty">?</div>
+                            <div class="slot-info">
+                                <span class="slot-name">Waiting...</span>
+                                <span class="slot-status">Empty slot</span>
+                            </div>
+                            <div class="slot-ready"></div>
+                        </div>
+                        <div class="player-slot" id="slot-red-1">
+                            <div class="slot-avatar empty">?</div>
+                            <div class="slot-info">
+                                <span class="slot-name">Waiting...</span>
+                                <span class="slot-status">Empty slot</span>
+                            </div>
+                            <div class="slot-ready"></div>
+                        </div>
+                    </div>
+
+                    <div class="vs-divider">
+                        <span>VS</span>
+                    </div>
+
+                    <div class="team-section team-blue-section">
+                        <div class="team-header-lobby">
+                            <span class="team-icon">🔵</span>
+                            <span>BLUE TEAM</span>
+                        </div>
+                        <div class="player-slot" id="slot-blue-0">
+                            <div class="slot-avatar empty">?</div>
+                            <div class="slot-info">
+                                <span class="slot-name">Waiting...</span>
+                                <span class="slot-status">Empty slot</span>
+                            </div>
+                            <div class="slot-ready"></div>
+                        </div>
+                        <div class="player-slot" id="slot-blue-1">
+                            <div class="slot-avatar empty">?</div>
+                            <div class="slot-info">
+                                <span class="slot-name">Waiting...</span>
+                                <span class="slot-status">Empty slot</span>
+                            </div>
+                            <div class="slot-ready"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lobby-footer">
+                    <div class="player-count-display">
+                        <span class="count-current" id="lobbyPlayerCount">1</span>
+                        <span class="count-divider">/</span>
+                        <span class="count-total">4</span>
+                        <span class="count-label">PLAYERS</span>
+                    </div>
+                    <button class="btn btn-cancel" id="leaveLobbyBtn">
+                        <span>Leave Queue</span>
+                    </button>
+                </div>
             </div>
 
-            <div class="how-to-play">
-                <h3>How to Play</h3>
-                <div class="rules-grid">
-                    <div class="rule">
-                        <span class="rule-icon">🛡️</span>
-                        <span>Defenders build ink walls to protect the target</span>
+            <!-- Right Panel: Instructions -->
+            <div class="lobby-instructions-panel">
+                <div class="instructions-header">
+                    <span class="instructions-icon">📖</span>
+                    <span>HOW TO PLAY</span>
+                </div>
+
+                <div class="instructions-content">
+                    <div class="instruction-section">
+                        <div class="section-title">
+                            <span class="section-num">01</span>
+                            <span>GAME FLOW</span>
+                        </div>
+                        <div class="section-content">
+                            <p>Each match consists of <strong>4 rounds</strong>. Teams alternate between attacking and
+                                defending roles every round.</p>
+                            <div class="phase-cards">
+                                <div class="phase-card defense">
+                                    <span class="phase-time">15s</span>
+                                    <span class="phase-name">Defense Phase</span>
+                                    <span class="phase-desc">Defenders draw walls</span>
+                                </div>
+                                <div class="phase-arrow">→</div>
+                                <div class="phase-card attack">
+                                    <span class="phase-time">30s</span>
+                                    <span class="phase-name">Attack Phase</span>
+                                    <span class="phase-desc">Attackers breach target</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="rule">
-                        <span class="rule-icon">⚔️</span>
-                        <span>Attackers draw lines from spawn to breach the target</span>
+
+                    <div class="instruction-section">
+                        <div class="section-title">
+                            <span class="section-num">02</span>
+                            <span>DEFENDING</span>
+                        </div>
+                        <div class="section-content">
+                            <div class="tip-row">
+                                <span class="tip-icon">🛡️</span>
+                                <span>Draw ink walls anywhere except the protected zone around the target</span>
+                            </div>
+                            <div class="tip-row">
+                                <span class="tip-icon">●</span>
+                                <span><strong>Permanent Ink</strong> — Stays until destroyed</span>
+                            </div>
+                            <div class="tip-row">
+                                <span class="tip-icon">◐</span>
+                                <span><strong>Fading Ink</strong> — Costs 50% less, fades after 8 seconds</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="rule">
-                        <span class="rule-icon">💥</span>
-                        <span>Hit enemy ink = 2 second stun</span>
+
+                    <div class="instruction-section">
+                        <div class="section-title">
+                            <span class="section-num">03</span>
+                            <span>ATTACKING</span>
+                        </div>
+                        <div class="section-content">
+                            <div class="tip-row">
+                                <span class="tip-icon">⚔️</span>
+                                <span>Draw a continuous line from your spawn zone to the golden target</span>
+                            </div>
+                            <div class="tip-row">
+                                <span class="tip-icon">🎯</span>
+                                <span>Reach the target center to score <strong>100 points</strong></span>
+                            </div>
+                            <div class="tip-row">
+                                <span class="tip-icon">📏</span>
+                                <span>Partial progress awards points based on distance reached</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="rule">
-                        <span class="rule-icon">🔄</span>
-                        <span>Teams swap roles each round</span>
+
+                    <div class="instruction-section">
+                        <div class="section-title">
+                            <span class="section-num">04</span>
+                            <span>COLLISIONS</span>
+                        </div>
+                        <div class="section-content">
+                            <div class="tip-row highlight-danger">
+                                <span class="tip-icon">💥</span>
+                                <span>Hitting enemy ink = <strong>2 second stun</strong> + teleport to spawn</span>
+                            </div>
+                            <div class="tip-row highlight-success">
+                                <span class="tip-icon">✨</span>
+                                <span>Your collision creates an <strong>explosion</strong> that destroys nearby enemy
+                                    walls!</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="instruction-section">
+                        <div class="section-title">
+                            <span class="section-num">05</span>
+                            <span>INK MANAGEMENT</span>
+                        </div>
+                        <div class="section-content">
+                            <div class="ink-info-visual">
+                                <div class="ink-stat">
+                                    <span class="ink-stat-icon">📉</span>
+                                    <span class="ink-stat-label">Drains while drawing</span>
+                                </div>
+                                <div class="ink-stat">
+                                    <span class="ink-stat-icon">📈</span>
+                                    <span class="ink-stat-label">Regenerates when idle</span>
+                                </div>
+                            </div>
+                            <p class="ink-tip">Balance aggressive moves with ink conservation for strategic advantage!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pro-tips">
+                    <div class="pro-tips-header">💡 PRO TIPS</div>
+                    <div class="pro-tips-list">
+                        <div class="pro-tip">Coordinate with your teammate to create overlapping defense zones</div>
+                        <div class="pro-tip">Use fading ink for quick patches during defense</div>
+                        <div class="pro-tip">Attackers: sacrifice yourself strategically to blow holes in walls!</div>
                     </div>
                 </div>
             </div>
@@ -98,6 +283,20 @@
                     <span class="role-icon">🛡️</span>
                     <span class="role-text">DEFENDING</span>
                 </div>
+
+                <!-- Coin Counter & Shop -->
+                <div class="coin-hud hidden" id="coinCounter">
+                    <div class="coin-display">
+                        <span class="coin-icon">🪙</span>
+                        <span class="coin-count" id="coinCount">0</span>
+                    </div>
+                    <button class="shop-btn" id="shopBtn">
+                        <span>⚡ SHOP</span>
+                    </button>
+                </div>
+
+                <!-- Active Powerups Display -->
+                <div class="active-powerups-hud hidden" id="activePowerupsList"></div>
             </div>
 
             <!-- Bottom HUD -->
@@ -159,6 +358,16 @@
                 </div>
             </div>
             <button class="btn btn-primary" id="playAgainBtn">Play Again</button>
+        </div>
+    </div>
+
+    <!-- Shop Overlay -->
+    <div class="overlay hidden" id="shopOverlay">
+        <div class="shop-modal">
+            <button class="shop-close-btn" id="closeShopBtn">✕</button>
+            <div class="shop-content" id="shopContent">
+                <!-- Populated by JavaScript -->
+            </div>
         </div>
     </div>
 

@@ -158,7 +158,24 @@ body {
     transform: translateX(4px);
 }
 
-/* Queue Status */
+/* Quick Rules on Menu */
+.quick-rules {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.rule-mini {
+    padding: 12px 20px;
+    background: var(--bg-medium);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Queue Status (legacy, keeping for compatibility) */
 .queue-status {
     display: flex;
     align-items: center;
@@ -197,7 +214,553 @@ body {
     font-weight: 600;
 }
 
-/* How to Play */
+/* ============================================
+   LOBBY SCREEN STYLES
+   ============================================ */
+
+.lobby-container {
+    display: flex;
+    gap: 24px;
+    width: 95vw;
+    max-width: 1400px;
+    height: 90vh;
+    max-height: 800px;
+}
+
+/* Left Panel - Players */
+.lobby-players-panel {
+    flex: 0 0 400px;
+    background: var(--bg-medium);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.lobby-header {
+    padding: 24px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.lobby-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+}
+
+.lobby-icon {
+    font-size: 28px;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.lobby-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.status-pulse {
+    width: 10px;
+    height: 10px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: statusPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.5);
+    }
+
+    50% {
+        opacity: 0.7;
+        box-shadow: 0 0 0 8px rgba(255, 215, 0, 0);
+    }
+}
+
+/* Player Slots */
+.player-slots {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+}
+
+.team-section {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.team-red-section {
+    border-left: 3px solid var(--red-primary);
+}
+
+.team-blue-section {
+    border-left: 3px solid var(--blue-primary);
+}
+
+.team-header-lobby {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.team-red-section .team-header-lobby {
+    color: var(--red-primary);
+}
+
+.team-blue-section .team-header-lobby {
+    color: var(--blue-primary);
+}
+
+.team-icon {
+    font-size: 14px;
+}
+
+.player-slot {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.player-slot:last-child {
+    margin-bottom: 0;
+}
+
+.player-slot.filled {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.player-slot.you {
+    background: rgba(255, 215, 0, 0.08);
+    border-color: var(--accent);
+}
+
+.slot-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    background: var(--bg-dark);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.slot-avatar.empty {
+    opacity: 0.4;
+    color: var(--text-secondary);
+}
+
+.team-red-section .player-slot.filled .slot-avatar {
+    background: linear-gradient(135deg, var(--red-primary), var(--red-dark));
+    border-color: var(--red-primary);
+}
+
+.team-blue-section .player-slot.filled .slot-avatar {
+    background: linear-gradient(135deg, var(--blue-primary), var(--blue-dark));
+    border-color: var(--blue-primary);
+}
+
+.slot-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.slot-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.player-slot:not(.filled) .slot-name {
+    color: var(--text-secondary);
+    opacity: 0.5;
+}
+
+.slot-status {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.player-slot.you .slot-status {
+    color: var(--accent);
+}
+
+.slot-ready {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--bg-dark);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.player-slot.filled .slot-ready {
+    background: #2ecc71;
+    border-color: #27ae60;
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+}
+
+/* VS Divider */
+.vs-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 0;
+}
+
+.vs-divider span {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    padding: 8px 24px;
+    background: var(--bg-dark);
+    border-radius: 20px;
+    letter-spacing: 4px;
+}
+
+/* Lobby Footer */
+.lobby-footer {
+    padding: 20px 24px;
+    background: rgba(0, 0, 0, 0.3);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.player-count-display {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.count-current {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.count-divider {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px;
+    color: var(--text-secondary);
+}
+
+.count-total {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px;
+    color: var(--text-secondary);
+}
+
+.count-label {
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--text-secondary);
+    margin-left: 8px;
+}
+
+.btn-cancel {
+    padding: 12px 24px;
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.btn-cancel:hover {
+    border-color: var(--red-primary);
+    color: var(--red-primary);
+    background: rgba(255, 71, 87, 0.1);
+}
+
+/* Right Panel - Instructions */
+.lobby-instructions-panel {
+    flex: 1;
+    background: var(--bg-medium);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.instructions-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 24px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    color: var(--accent);
+    background: linear-gradient(180deg, rgba(255, 215, 0, 0.05) 0%, transparent 100%);
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+}
+
+.instructions-icon {
+    font-size: 24px;
+}
+
+.instructions-content {
+    flex: 1;
+    padding: 20px 24px;
+    overflow-y: auto;
+}
+
+.instruction-section {
+    margin-bottom: 24px;
+}
+
+.instruction-section:last-child {
+    margin-bottom: 0;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.section-num {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    opacity: 0.7;
+}
+
+.section-title span:last-child {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: var(--text-primary);
+}
+
+.section-content {
+    padding-left: 36px;
+}
+
+.section-content p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+
+.section-content strong {
+    color: var(--text-primary);
+}
+
+/* Phase Cards */
+.phase-cards {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.phase-card {
+    flex: 1;
+    padding: 14px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: center;
+}
+
+.phase-card.defense {
+    background: rgba(52, 152, 219, 0.1);
+    border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+.phase-card.attack {
+    background: rgba(255, 71, 87, 0.1);
+    border: 1px solid rgba(255, 71, 87, 0.3);
+}
+
+.phase-time {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.phase-card.defense .phase-time {
+    color: var(--blue-primary);
+}
+
+.phase-card.attack .phase-time {
+    color: var(--red-primary);
+}
+
+.phase-name {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--text-primary);
+}
+
+.phase-desc {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.phase-arrow {
+    font-size: 20px;
+    color: var(--text-secondary);
+}
+
+/* Tip Rows */
+.tip-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+.tip-row:last-child {
+    margin-bottom: 0;
+}
+
+.tip-icon {
+    flex-shrink: 0;
+    font-size: 16px;
+}
+
+.tip-row.highlight-danger {
+    background: rgba(255, 71, 87, 0.08);
+    border-left: 3px solid var(--red-primary);
+}
+
+.tip-row.highlight-success {
+    background: rgba(46, 204, 113, 0.08);
+    border-left: 3px solid #2ecc71;
+}
+
+/* Ink Info Visual */
+.ink-info-visual {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.ink-stat {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.ink-stat-icon {
+    font-size: 20px;
+}
+
+.ink-stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.ink-tip {
+    font-size: 13px;
+    font-style: italic;
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+
+/* Pro Tips */
+.pro-tips {
+    padding: 20px 24px;
+    background: linear-gradient(180deg, transparent 0%, rgba(255, 215, 0, 0.03) 100%);
+    border-top: 1px solid rgba(255, 215, 0, 0.1);
+}
+
+.pro-tips-header {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 12px;
+}
+
+.pro-tips-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pro-tip {
+    position: relative;
+    padding-left: 20px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.pro-tip::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    opacity: 0.6;
+}
+
+/* ============================================
+   GAME SCREEN STYLES (unchanged from original)
+   ============================================ */
+
+/* How to Play (legacy) */
 .how-to-play {
     max-width: 600px;
     margin-inline: auto;
@@ -684,7 +1247,264 @@ body {
     color: var(--text-secondary);
 }
 
+/* ============================================
+   COIN & SHOP STYLES
+   ============================================ */
+
+/* Coin HUD */
+.coin-hud {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.coin-hud.hidden {
+    display: none;
+}
+
+.coin-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid var(--accent);
+    border-radius: 20px;
+}
+
+.coin-icon {
+    font-size: 24px;
+}
+
+.coin-count {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.shop-btn {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, var(--accent), #ffaa00);
+    border: none;
+    border-radius: 20px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: #000;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+}
+
+.shop-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+/* Active Powerups HUD */
+.active-powerups-hud {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.active-powerups-hud.hidden {
+    display: none;
+}
+
+.active-powerup-tag {
+    padding: 6px 14px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 170, 0, 0.2));
+    border: 1px solid var(--accent);
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 1px;
+}
+
+/* Shop Modal */
+.shop-modal {
+    position: relative;
+    background: var(--bg-medium);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 20px;
+    padding: 32px;
+    max-width: 600px;
+    width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.shop-close-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 50%;
+    color: var(--text-secondary);
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.shop-close-btn:hover {
+    background: rgba(255, 71, 87, 0.3);
+    color: var(--red-primary);
+}
+
+.shop-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.shop-header h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 3px;
+}
+
+.shop-coins {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 20px;
+    color: var(--accent);
+}
+
+.shop-notice {
+    text-align: center;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+}
+
+.powerup-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.powerup-card {
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.powerup-card:hover:not(.disabled):not(.owned) {
+    border-color: var(--accent);
+    background: rgba(255, 215, 0, 0.05);
+    transform: translateY(-2px);
+}
+
+.powerup-card.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.powerup-card.owned {
+    border-color: #2ecc71;
+    background: rgba(46, 204, 113, 0.1);
+}
+
+.powerup-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+}
+
+.powerup-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    line-height: 1.4;
+}
+
+.powerup-cost {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent);
+}
+
+.powerup-card.owned .powerup-cost {
+    color: #2ecc71;
+}
+
+.active-powerups-section {
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.active-powerups-section h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+
+.active-list {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.active-tag {
+    padding: 6px 12px;
+    background: rgba(46, 204, 113, 0.2);
+    border: 1px solid #2ecc71;
+    border-radius: 15px;
+    font-size: 12px;
+    color: #2ecc71;
+}
+
 /* Responsive */
+@media (max-width: 1200px) {
+    .lobby-container {
+        flex-direction: column;
+        height: auto;
+        max-height: none;
+        padding: 20px;
+    }
+
+    .lobby-players-panel {
+        flex: none;
+    }
+
+    .lobby-instructions-panel {
+        max-height: 400px;
+    }
+}
+
 @media (max-width: 768px) {
     .rules-grid {
         grid-template-columns: 1fr;
@@ -716,5 +1536,39 @@ body {
         max-width: 100%;
         width: 100%;
         margin: 0;
+    }
+
+    .lobby-container {
+        padding: 10px;
+    }
+
+    .lobby-players-panel,
+    .lobby-instructions-panel {
+        border-radius: 12px;
+    }
+
+    .player-slots {
+        padding: 12px;
+    }
+
+    .phase-cards {
+        flex-direction: column;
+    }
+
+    .phase-arrow {
+        transform: rotate(90deg);
+    }
+
+    .powerup-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .coin-hud {
+        top: 80px;
+        right: 12px;
+    }
+
+    .shop-modal {
+        padding: 20px;
     }
 }
