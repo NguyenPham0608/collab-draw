@@ -16,7 +16,6 @@ const gameContainer = document.getElementById('gameContainer');
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// HUD Elements
 const teamIndicator = document.getElementById('teamIndicator');
 const teamName = document.getElementById('teamName');
 const roleIndicator = document.getElementById('roleIndicator');
@@ -59,12 +58,14 @@ let ink = 100;
 let brushSize = 8;
 let crystalPos = { x: 80, y: 350, radius: 40 };
 
+// Store all strokes for redrawing
+let strokes = [];
+
 // Drawing state
 let isDrawing = false;
 let lastX = 0;
 let lastY = 0;
 
-// Team colors
 const TEAM_COLORS = {
     red: '#ff2d55',
     blue: '#00d4ff'
@@ -80,7 +81,6 @@ updateBrushPreview();
 // EVENT LISTENERS
 // ============================================
 
-// Enter lobby
 enterLobbyBtn.addEventListener('click', enterLobby);
 usernameInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') enterLobby();
@@ -98,7 +98,6 @@ function enterLobby() {
     connectWebSocket();
 }
 
-// Brush size
 brushSizeInput.addEventListener('input', () => {
     brushSize = parseInt(brushSizeInput.value);
     updateBrushPreview();
@@ -107,7 +106,6 @@ brushSizeInput.addEventListener('input', () => {
 function updateBrushPreview() {
     const size = Math.max(4, brushSize);
     const color = myTeam ? TEAM_COLORS[myTeam] : '#666';
-    brushPreview.style.setProperty('--size', size + 'px');
     brushPreview.innerHTML = `<div style="width:${size}px;height:${size}px;background:${color};border-radius:50%;"></div>`;
 }
 
@@ -179,6 +177,8 @@ function handleMessage(msg) {
             break;
 
         case 'draw':
+            // Server confirmed stroke - add to local store and draw
+            strokes.push(msg.stroke);
             drawStroke(msg.stroke);
             break;
 
@@ -187,16 +187,12 @@ function handleMessage(msg) {
             break;
 
         case 'inkUpdate':
-            // Handle both individual ink update and batch updates
             if (msg.ink !== undefined) {
-                // Individual ink update (after drawing)
                 ink = msg.ink;
                 updateInkDisplay();
             }
             if (msg.players) {
-                // Batch ink update from server
                 players = msg.players;
-                // Update my ink from the batch
                 if (myId && players[myId]) {
                     ink = players[myId].ink;
                     updateInkDisplay();
@@ -235,11 +231,11 @@ function renderRoomList(rooms) {
     roomsGrid.innerHTML = Object.values(rooms).map(room => {
         const isFull = room.playerCount >= 4;
         const statusText = room.gameState === 'waiting' ? 'WAITING FOR PLAYERS' :
-            room.gameState === 'countdown' ? 'STARTING SOON' :
-                room.gameState === 'fortress' ? 'PREPARING' :
-                    room.gameState === 'playing' ? 'IN BATTLE' :
-                        room.gameState === 'roundEnd' ? 'ROUND END' :
-                            room.gameState === 'gameOver' ? 'GAME OVER' : 'WAITING';
+                          room.gameState === 'countdown' ? 'STARTING SOON' :
+                          room.gameState === 'fortress' ? 'PREPARING' :
+                          room.gameState === 'playing' ? 'IN BATTLE' :
+                          room.gameState === 'roundEnd' ? 'ROUND END' :
+                          room.gameState === 'gameOver' ? 'GAME OVER' : 'WAITING';
         const statusClass = room.gameState === 'waiting' ? 'waiting' : 'playing';
 
         return `
@@ -276,24 +272,18 @@ function handleJoinedRoom(msg) {
     attackingTeam = msg.attackingTeam;
     currentRound = msg.round;
     crystalPos = msg.crystal;
-    ink = 100; // Start with full ink
+    strokes = msg.strokes || [];
+    ink = 100;
 
-    // Update team color display
     teamName.textContent = myTeam.toUpperCase();
     teamName.className = 'team-name ' + myTeam;
 
-    // Show game container
     roomModal.classList.add('hidden');
     gameContainer.classList.remove('hidden');
 
-    // Draw existing strokes
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    msg.strokes.forEach(stroke => drawStroke(stroke));
+    // Redraw entire canvas from server state
+    redrawCanvas();
 
-    // Draw crystal zone
-    drawCrystalZone();
-
-    // Update UI
     updateRoleDisplay();
     updateScoreboard();
     updatePlayersList();
@@ -302,15 +292,63 @@ function handleJoinedRoom(msg) {
     updateAttackBadges();
     updateInkDisplay();
 
-    // Update phase label based on current state
     if (gameState === 'waiting') {
         phaseLabel.textContent = 'WAITING (2v2)';
     } else if (gameState === 'countdown') {
         phaseLabel.textContent = 'STARTING';
     }
 
-    // Setup canvas events
     setupCanvasEvents();
+}
+
+// ============================================
+// CANVAS DRAWING
+// ============================================
+
+function redrawCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawCrystalZone();
+    
+    // Redraw all strokes from server state
+    strokes.forEach(stroke => {
+        drawStroke(stroke);
+    });
+}
+
+function drawStroke(stroke) {
+    ctx.beginPath();
+    ctx.moveTo(stroke.x1, stroke.y1);
+    ctx.lineTo(stroke.x2, stroke.y2);
+    ctx.strokeStyle = stroke.color;
+    ctx.lineWidth = stroke.size;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+}
+
+function drawCrystalZone() {
+    ctx.beginPath();
+    ctx.arc(crystalPos.x, crystalPos.y, crystalPos.radius + 10, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(0, 212, 255, 0.3)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+}
+
+function handleCollision(msg) {
+    // Remove collided strokes from local store
+    const removedIds = msg.removedIds || [];
+    strokes = strokes.filter(s => !removedIds.includes(s.id));
+    
+    // Flash effect
+    canvas.style.boxShadow = '0 0 40px rgba(255, 100, 100, 0.8)';
+    setTimeout(() => {
+        canvas.style.boxShadow = '';
+    }, 200);
+    
+    // Redraw entire canvas to reflect removed strokes
+    redrawCanvas();
 }
 
 // ============================================
@@ -320,22 +358,13 @@ function handleJoinedRoom(msg) {
 function handleCountdown(msg) {
     gameState = 'countdown';
     phaseLabel.textContent = 'STARTING IN';
-
-    // Show big countdown number
+    
     const count = msg.timeRemaining;
     timer.textContent = count;
     timer.classList.add('urgent');
-
-    if (count === 5) {
-        showAnnouncement('⏱️', '5', 'Get ready!', 900);
-    } else if (count === 4) {
-        showAnnouncement('⏱️', '4', 'Get ready!', 900);
-    } else if (count === 3) {
-        showAnnouncement('⏱️', '3', 'Get ready!', 900);
-    } else if (count === 2) {
-        showAnnouncement('⏱️', '2', 'Get ready!', 900);
-    } else if (count === 1) {
-        showAnnouncement('⏱️', '1', 'Get ready!', 900);
+    
+    if (count >= 1 && count <= 5) {
+        showAnnouncement('⏱️', String(count), 'Get ready!', 900);
     }
 }
 
@@ -349,7 +378,7 @@ function handleCountdownCancelled(msg) {
 
 function handlePhaseChange(msg) {
     gameState = msg.phase;
-
+    
     if (msg.attackingTeam) {
         attackingTeam = msg.attackingTeam;
     }
@@ -359,7 +388,6 @@ function handlePhaseChange(msg) {
     }
     if (msg.players) {
         players = msg.players;
-        // Update my ink from the batch
         if (myId && players[myId]) {
             ink = players[myId].ink;
             updateInkDisplay();
@@ -377,7 +405,7 @@ function handlePhaseChange(msg) {
     } else if (msg.phase === 'fortress') {
         phaseLabel.textContent = 'FORTRESS';
         const isDefender = (attackingTeam === 'red' && myTeam === 'blue') ||
-            (attackingTeam === 'blue' && myTeam === 'red');
+                          (attackingTeam === 'blue' && myTeam === 'red');
         if (isDefender) {
             showAnnouncement('🏰', 'FORTRESS PHASE', 'Build your defenses!', 2000);
         } else {
@@ -398,10 +426,10 @@ function handleRoundEnd(msg) {
     const icon = msg.winner === 'red' ? '⚔️' : '🛡️';
     showAnnouncement(icon, winnerText, `Score: ${scores.red} - ${scores.blue}`, 2500, msg.winner);
 
-    // Clear canvas for next round
+    // Clear local strokes and canvas for next round
     setTimeout(() => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawCrystalZone();
+        strokes = [];
+        redrawCanvas();
     }, 2500);
 }
 
@@ -421,9 +449,9 @@ function handleRoomReset(msg) {
     currentRound = 0;
     gameState = 'waiting';
     ink = 100;
+    strokes = [];
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawCrystalZone();
+    redrawCanvas();
 
     updateScoreboard();
     updatePlayersList();
@@ -435,32 +463,24 @@ function handleRoomReset(msg) {
 }
 
 // ============================================
-// DRAWING
+// DRAWING INPUT
 // ============================================
 
 function setupCanvasEvents() {
-    // Remove old listeners first
-    canvas.removeEventListener('mousedown', startDrawing);
-    canvas.removeEventListener('mousemove', draw);
-    canvas.removeEventListener('mouseup', stopDrawing);
-    canvas.removeEventListener('mouseout', stopDrawing);
+    canvas.onmousedown = startDrawing;
+    canvas.onmousemove = draw;
+    canvas.onmouseup = stopDrawing;
+    canvas.onmouseout = stopDrawing;
 
-    // Mouse events
-    canvas.addEventListener('mousedown', startDrawing);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', stopDrawing);
-    canvas.addEventListener('mouseout', stopDrawing);
-
-    // Touch events
-    canvas.addEventListener('touchstart', (e) => {
+    canvas.ontouchstart = (e) => {
         e.preventDefault();
         startDrawing(e);
-    }, { passive: false });
-    canvas.addEventListener('touchmove', (e) => {
+    };
+    canvas.ontouchmove = (e) => {
         e.preventDefault();
         draw(e);
-    }, { passive: false });
-    canvas.addEventListener('touchend', stopDrawing);
+    };
+    canvas.ontouchend = stopDrawing;
 }
 
 function startDrawing(e) {
@@ -474,24 +494,17 @@ function draw(e) {
 
     const [x, y] = getPos(e);
 
-    const stroke = {
-        x1: lastX,
-        y1: lastY,
-        x2: x,
-        y2: y,
-        color: TEAM_COLORS[myTeam],
-        size: brushSize,
-        team: myTeam
-    };
-
-    // Draw locally
-    drawStroke(stroke);
-
-    // Send to server
+    // Send stroke to server - DON'T draw locally, wait for server confirmation
     if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
             type: 'draw',
-            stroke: stroke
+            stroke: {
+                x1: lastX,
+                y1: lastY,
+                x2: x,
+                y2: y,
+                size: brushSize
+            }
         }));
     }
 
@@ -508,9 +521,8 @@ function canDraw() {
     }
 
     const isDefender = (attackingTeam === 'red' && myTeam === 'blue') ||
-        (attackingTeam === 'blue' && myTeam === 'red');
+                       (attackingTeam === 'blue' && myTeam === 'red');
 
-    // During fortress phase, only defenders can draw
     if (gameState === 'fortress' && !isDefender) {
         return false;
     }
@@ -529,43 +541,13 @@ function getPos(e) {
     return [x, y];
 }
 
-function drawStroke(stroke) {
-    ctx.beginPath();
-    ctx.moveTo(stroke.x1, stroke.y1);
-    ctx.lineTo(stroke.x2, stroke.y2);
-    ctx.strokeStyle = stroke.color;
-    ctx.lineWidth = stroke.size;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.stroke();
-}
-
-function drawCrystalZone() {
-    // Draw crystal protection zone
-    ctx.beginPath();
-    ctx.arc(crystalPos.x, crystalPos.y, crystalPos.radius + 10, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(0, 212, 255, 0.3)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
-    ctx.stroke();
-    ctx.setLineDash([]);
-}
-
-function handleCollision(msg) {
-    // Flash effect for collision
-    canvas.style.boxShadow = '0 0 30px rgba(255, 255, 255, 0.8)';
-    setTimeout(() => {
-        canvas.style.boxShadow = '';
-    }, 200);
-}
-
 // ============================================
 // UI UPDATES
 // ============================================
 
 function updateRoleDisplay() {
     const isDefender = (attackingTeam === 'red' && myTeam === 'blue') ||
-        (attackingTeam === 'blue' && myTeam === 'red');
+                       (attackingTeam === 'blue' && myTeam === 'red');
 
     if (isDefender) {
         roleIndicator.className = 'role-indicator defending';
@@ -595,12 +577,11 @@ function updateScoreboard() {
 
 function updateTimer(seconds) {
     if (seconds === undefined || seconds === null) return;
-
+    
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     timer.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
 
-    // Urgent styling for low time
     if (seconds <= 10 && gameState === 'playing') {
         timer.classList.add('urgent');
     } else if (gameState !== 'countdown') {
@@ -652,7 +633,6 @@ function updatePlayersList() {
         }
     });
 
-    // Fill empty slots
     while (redPlayers.length < 2) {
         redPlayers.push('<div class="empty-slot">Waiting...</div>');
     }
