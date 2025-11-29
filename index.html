@@ -4,97 +4,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Collab Draw</title>
+    <title>Siege - Collaborative Drawing Battle</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
     <!-- Username Modal -->
-    <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-overlay" id="usernameModal">
         <div class="modal">
-            <div class="modal-icon shine">🎨</div>
-            <h2>Welcome to Collab Draw</h2>
-            <p>Enter your name to start drawing with others</p>
-            <input type="text" id="usernameInput" placeholder="Your name..." maxlength="20" autocomplete="off">
-            <button class="shine" id="joinBtn">Start Drawing</button>
+            <div class="modal-icon">⚔️</div>
+            <h2>SIEGE</h2>
+            <p class="tagline">Draw to Attack. Draw to Defend.</p>
+            <input type="text" id="usernameInput" placeholder="Enter your callsign..." maxlength="15"
+                autocomplete="off">
+            <button class="btn-primary" id="enterLobbyBtn">ENTER BATTLEFIELD</button>
         </div>
     </div>
 
-    <!-- Main App -->
-    <div class="app" id="app">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <div class="logo-icon shine">🎨</div>
-                    <span>Collab Draw</span>
+    <!-- Room Selection Modal -->
+    <div class="modal-overlay hidden" id="roomModal">
+        <div class="modal room-modal">
+            <h2>SELECT ARENA</h2>
+            <p class="tagline">Choose your battleground (2v2)</p>
+            <div class="rooms-grid" id="roomsGrid">
+                <!-- Rooms will be populated by JS -->
+            </div>
+            <div class="room-legend">
+                <span class="legend-item"><span class="dot red"></span> Red Team</span>
+                <span class="legend-item"><span class="dot blue"></span> Blue Team</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Game -->
+    <div class="game-container hidden" id="gameContainer">
+        <!-- Top HUD -->
+        <header class="game-hud">
+            <div class="hud-left">
+                <div class="team-indicator" id="teamIndicator">
+                    <span class="team-label">YOUR TEAM</span>
+                    <span class="team-name" id="teamName">---</span>
                 </div>
-                <div class="connection-status">
-                    <div class="status-dot" id="statusDot"></div>
-                    <span id="statusText">Connecting...</span>
+                <div class="role-indicator" id="roleIndicator">
+                    <span class="role-icon">🛡️</span>
+                    <span class="role-name" id="roleName">DEFENDING</span>
                 </div>
             </div>
 
-            <div class="users-section">
-                <div class="section-title">Online Now — <span id="userCount">0</span></div>
-                <div class="users-list" id="usersList"></div>
+            <div class="hud-center">
+                <div class="scoreboard">
+                    <div class="score red-score">
+                        <span class="score-label">RED</span>
+                        <span class="score-value" id="redScore">0</span>
+                    </div>
+                    <div class="timer-container">
+                        <div class="phase-label" id="phaseLabel">WAITING</div>
+                        <div class="timer" id="timer">2:00</div>
+                        <div class="round-label">Round <span id="roundNum">0</span></div>
+                    </div>
+                    <div class="score blue-score">
+                        <span class="score-label">BLUE</span>
+                        <span class="score-value" id="blueScore">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hud-right">
+                <div class="ink-container">
+                    <span class="ink-label">INK</span>
+                    <div class="ink-bar">
+                        <div class="ink-fill" id="inkFill"></div>
+                    </div>
+                    <span class="ink-value" id="inkValue">100%</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Players Panel -->
+        <aside class="players-panel" id="playersPanel">
+            <div class="panel-header">
+                <span class="panel-title">COMBATANTS</span>
+            </div>
+            <div class="team-section red-team">
+                <div class="team-header">
+                    <span class="team-icon">⚔️</span> RED TEAM
+                    <span class="attack-badge" id="redAttackBadge">ATK</span>
+                </div>
+                <div class="team-players" id="redTeamPlayers"></div>
+            </div>
+            <div class="team-section blue-team">
+                <div class="team-header">
+                    <span class="team-icon">🛡️</span> BLUE TEAM
+                    <span class="attack-badge" id="blueAttackBadge" style="display:none;">ATK</span>
+                </div>
+                <div class="team-players" id="blueTeamPlayers"></div>
             </div>
         </aside>
 
-        <main class="main-content">
-            <div class="toolbar">
-                <div class="tool-group">
-                    <span class="tool-group-label">Color</span>
-                    <button class="color-btn active" data-color="#1a1a2e" style="background: #1a1a2e;"></button>
-                    <button class="color-btn" data-color="#ff4757" style="background: #ff4757;"></button>
-                    <button class="color-btn" data-color="#ff9f43" style="background: #ff9f43;"></button>
-                    <button class="color-btn" data-color="#2ed573" style="background: #2ed573;"></button>
-                    <button class="color-btn" data-color="#3498db" style="background: #3498db;"></button>
-                    <button class="color-btn" data-color="#9b59b6" style="background: #9b59b6;"></button>
-                    <button class="color-btn" data-color="#ffffff"
-                        style="background: #ffffff; border: 1px solid #ddd;"></button>
-                    <div class="color-picker-wrapper">
-                        <div class="color-picker-btn"></div>
-                        <input type="color" id="colorPicker" value="#1a1a2e">
-                    </div>
+        <!-- Canvas Area -->
+        <main class="battlefield">
+            <div class="canvas-wrapper">
+                <div class="spawn-zone red-spawn" id="redSpawn">
+                    <span>RED SPAWN</span>
                 </div>
-
-                <div class="divider"></div>
-
-                <div class="tool-group">
-                    <span class="tool-group-label">Size</span>
-                    <div class="size-slider">
-                        <input type="range" id="brushSize" min="1" max="50" value="5">
-                        <div class="brush-preview">
-                            <div class="brush-dot" id="brushPreview"></div>
-                        </div>
+                <canvas id="gameCanvas" width="1000" height="700"></canvas>
+                <div class="crystal-container" id="crystalContainer">
+                    <div class="crystal" id="crystal">
+                        <div class="crystal-glow"></div>
+                        <span class="crystal-icon">💎</span>
                     </div>
-                </div>
-
-                <div class="toolbar-spacer"></div>
-
-                <button class="btn btn-secondary" id="downloadBtn">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M8 1v10M4 8l4 4 4-4M2 14h12" />
-                    </svg>
-                    Save
-                </button>
-                <button class="btn btn-danger" id="clearBtn">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M2 4h12M5 4V2h6v2M6 7v6M10 7v6M3 4l1 10h8l1-10" />
-                    </svg>
-                    Clear All
-                </button>
-            </div>
-
-            <div class="canvas-area">
-                <div class="canvas-container">
-                    <canvas id="canvas" width="1000" height="700"></canvas>
+                    <span class="crystal-label">DEFEND</span>
                 </div>
             </div>
         </main>
+
+        <!-- Brush Size Control -->
+        <div class="brush-control">
+            <span class="brush-label">SIZE</span>
+            <input type="range" id="brushSize" min="3" max="30" value="8">
+            <div class="brush-preview" id="brushPreview"></div>
+        </div>
+
+        <!-- Game Announcements -->
+        <div class="announcement hidden" id="announcement">
+            <div class="announcement-content">
+                <div class="announcement-icon" id="announcementIcon">⚔️</div>
+                <div class="announcement-text" id="announcementText">ROUND START</div>
+                <div class="announcement-sub" id="announcementSub">Prepare for battle!</div>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
