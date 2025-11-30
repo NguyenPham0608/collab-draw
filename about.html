@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - Ink Wars</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            overflow: auto;
+        }
+
+        .page-container {
+            min-height: 100vh;
+            background: linear-gradient(180deg, var(--bg-dark) 0%, var(--bg-medium) 100%);
+            padding: 40px 20px;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 24px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: var(--accent);
+        }
+
+        .page-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 48px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--red-primary), var(--blue-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 6px;
+            margin-bottom: 16px;
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 18px;
+            letter-spacing: 2px;
+        }
+
+        .content-wrapper {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .content-section {
+            background: var(--bg-medium);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 40px;
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 20px;
+            color: var(--accent);
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+
+        .content-text {
+            color: var(--text-secondary);
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        .content-text:last-child {
+            margin-bottom: 0;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 24px;
+        }
+
+        .feature-card {
+            background: var(--bg-dark);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255, 215, 0, 0.3);
+        }
+
+        .feature-icon {
+            font-size: 36px;
+            margin-bottom: 12px;
+        }
+
+        .feature-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            color: var(--text-primary);
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .feature-desc {
+            color: var(--text-secondary);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .team-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid var(--accent);
+            border-radius: 20px;
+            color: var(--accent);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            letter-spacing: 2px;
+        }
+
+        .highlight {
+            color: var(--text-primary);
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: center;
+            gap: 48px;
+            margin-top: 32px;
+            padding-top: 32px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        .footer-nav {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            padding: 40px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            margin-top: 40px;
+        }
+
+        .footer-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .footer-link:hover {
+            color: var(--accent);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page-container">
+        <div class="page-header">
+            <a href="index.html" class="back-link">← Back to Game</a>
+            <h1 class="page-title">ABOUT INK WARS</h1>
+            <p class="page-subtitle">2v2 Tactical Line Combat</p>
+        </div>
+
+        <div class="content-wrapper">
+            <section class="content-section">
+                <h2 class="section-title">THE GAME</h2>
+                <p class="content-text">
+                    <span class="highlight">Ink Wars</span> is a fast-paced, real-time multiplayer drawing game where
+                    two teams of two battle for territorial supremacy. One team attacks by drawing continuous ink lines
+                    from their spawn zone toward the central target, while the other team defends by creating strategic
+                    ink barriers to block their advance.
+                </p>
+                <p class="content-text">
+                    Every match is a test of coordination, strategy, and quick reflexes. Attackers must navigate through
+                    defensive walls while managing their limited ink supply. Defenders must anticipate attack routes and
+                    place their barriers wisely. When an attacker's line collides with a defender's wall, an explosion
+                    destroys a portion of the barrier—but the attacker is stunned and teleported back to spawn.
+                </p>
+                <p class="content-text">
+                    Teams swap roles each round, ensuring both offensive creativity and defensive planning are rewarded.
+                    The team with the highest score after four rounds claims victory.
+                </p>
+
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">⚔️</div>
+                        <div class="feature-title">ATTACK</div>
+                        <div class="feature-desc">Draw from spawn to breach the target zone</div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🛡️</div>
+                        <div class="feature-title">DEFEND</div>
+                        <div class="feature-desc">Build ink walls to block enemy advances</div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">💥</div>
+                        <div class="feature-title">EXPLODE</div>
+                        <div class="feature-desc">Collisions destroy walls but stun attackers</div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🔄</div>
+                        <div class="feature-title">ROTATE</div>
+                        <div class="feature-desc">Teams swap roles every round</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="content-section">
+                <h2 class="section-title">HOW TO PLAY</h2>
+                <p class="content-text">
+                    <span class="highlight">As an Attacker:</span> Your goal is to draw a continuous line from your
+                    spawn zone (marked with your team color) to the golden target in the center. You must start drawing
+                    from within your spawn circle. If your line touches an enemy defensive wall, you'll trigger an
+                    explosion that destroys part of the wall—but you'll be stunned for 2 seconds and teleported back to
+                    spawn. Manage your ink wisely; it drains while drawing and regenerates when you stop.
+                </p>
+                <p class="content-text">
+                    <span class="highlight">As a Defender:</span> During the defense phase, draw walls anywhere on the
+                    canvas to create barriers. You have two ink types: <span class="highlight">Permanent ink</span>
+                    stays for the entire round, while <span class="highlight">Fading ink</span> costs 50% less but
+                    disappears after 8 seconds. Position your walls strategically to block the most likely attack paths
+                    toward the target.
+                </p>
+                <p class="content-text">
+                    <span class="highlight">Scoring:</span> Attackers earn 100 points for reaching the target, or
+                    partial points based on how close they got. After 4 rounds of alternating roles, the team with the
+                    most points wins!
+                </p>
+            </section>
+
+            <section class="content-section">
+                <h2 class="section-title">THE TEAM</h2>
+                <p class="content-text">
+                    Ink Wars was created as an experimental multiplayer experience exploring real-time competitive
+                    drawing mechanics. Built with modern web technologies including HTML5 Canvas, WebSockets, and
+                    Node.js, the game delivers smooth, responsive gameplay across devices.
+                </p>
+                <div style="text-align: center; margin-top: 24px;">
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <div class="stat-value">2v2</div>
+                        <div class="stat-label">Players</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">4</div>
+                        <div class="stat-label">Rounds</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">∞</div>
+                        <div class="stat-label">Strategies</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <nav class="footer-nav">
+            <a href="index.html" class="footer-link">Play Now</a>
+            <a href="privacy.html" class="footer-link">Privacy Policy</a>
+            <a href="terms.html" class="footer-link">Terms of Service</a>
+        </nav>
+    </div>
+</body>
+
+</html>

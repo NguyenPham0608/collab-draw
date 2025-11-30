@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Ink Wars</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            overflow: auto;
+        }
+
+        .page-container {
+            min-height: 100vh;
+            background: linear-gradient(180deg, var(--bg-dark) 0%, var(--bg-medium) 100%);
+            padding: 40px 20px;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 24px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: var(--accent);
+        }
+
+        .page-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 48px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--red-primary), var(--blue-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 6px;
+            margin-bottom: 16px;
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 16px;
+            letter-spacing: 1px;
+        }
+
+        .effective-date {
+            display: inline-block;
+            padding: 8px 16px;
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 20px;
+            color: var(--accent);
+            font-size: 12px;
+            letter-spacing: 1px;
+            margin-top: 16px;
+        }
+
+        .content-wrapper {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .content-section {
+            background: var(--bg-medium);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 40px;
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            color: var(--accent);
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+
+        .content-text {
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.8;
+            margin-bottom: 16px;
+        }
+
+        .content-text:last-child {
+            margin-bottom: 0;
+        }
+
+        .highlight {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .data-list {
+            list-style: none;
+            padding: 0;
+            margin: 16px 0;
+        }
+
+        .data-list li {
+            position: relative;
+            padding-left: 24px;
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .data-list li::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+        }
+
+        .info-box {
+            background: var(--bg-dark);
+            border-left: 3px solid var(--accent);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .info-box-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            color: var(--accent);
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .info-box-text {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .footer-nav {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            padding: 40px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            margin-top: 40px;
+        }
+
+        .footer-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .footer-link:hover {
+            color: var(--accent);
+        }
+
+        @media (max-width: 768px) {
+            .page-title {
+                font-size: 32px;
+            }
+
+            .content-section {
+                padding: 24px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page-container">
+        <div class="page-header">
+            <a href="index.html" class="back-link">← Back to Game</a>
+            <h1 class="page-title">PRIVACY POLICY</h1>
+            <p class="page-subtitle">Your privacy matters to us</p>
+        </div>
+
+        <div class="content-wrapper">
+            <section class="content-section">
+                <h2 class="section-title">OVERVIEW</h2>
+                <p class="content-text">
+                    Welcome to <span class="highlight">Ink Wars</span>. This Privacy Policy explains how we collect,
+                    use, and protect your information when you play our game. We are committed to being transparent
+                    about our data practices and respecting your privacy.
+                </p>
+                <p class="content-text">
+                    By using Ink Wars, you agree to the collection and use of information as described in this policy.
+                    If you do not agree with our practices, please do not use the game.
+                </p>
+            </section>
+
+            <section class="content-section">
+                <h2 class="section-title">INFORMATION WE COLLECT</h2>
+                <p class="content-text">
+                    We collect minimal information necessary to provide the game experience:
+                </p>
+                <ul class="data-list">
+                    <li><span class="highlight">Username/Callsign:</span> The display name you enter when joining a
+                        match. This is visible to other players in your game.</li>
+                    <li><span class="highlight">Gameplay Data:</span> Drawing coordinates, game actions, and match
+                        results transmitted in real-time during gameplay.</li>
+                    <li><span class="highlight">Connection Data:</span> Basic technical information required for
+                        WebSocket connections, such as connection timestamps.</li>
+                </ul>
+
+                <div class="info-box">
+                    <div class="info-box-title">WHAT WE DON'T COLLECT</div>
+                    <div class="info-box-text">
+                        We do not collect email addresses, passwords, payment information, precise location data, or any
+                        personally identifiable information beyond your chosen username.
+                    </div>
+                </div>
+            </section>
+
+            <section class="content-section">
+                <h2 class="section-title">HOW WE USE YOUR INFORMATION</h2>
+                <p class="content-text">
+                    The information we collect is used solely for:
+                </p>
+                <ul class="data-list">
+                    <li><span class="highlight">Matchmaking:</span> Connecting you with other players for 2v2 matches.
+                    </li>
+                    <li><span class="highlight">Gameplay:</span> Transmitting your drawing actions to other players in
+                        real-time.</li>
+                    <li><span class="highlight">Display:</span> Showing your username to teammates and opponents during
+                        matches.</li>
+                </ul>
+                <p class="content-text">
+                    We do not sell, rent, or share your information with third parties for marketing purposes.
+                </p>
+            </section>
+
+            <section class="content-section">
+                <h2 class="section-title">DATA RETENTION</h2>
+                <p class="content-text">
+                    <span class="highlight">Session Data:</span> Gameplay data (drawing coordinates, match actions)
+                    exists only during active game sessions and is not permanently stored. When a match ends or you
+                    disconnect, this data is deleted.
+                </p>
+                <p class="content-text">
+                    <span class="highlight">Username:</span> Your chosen username is stored only in your browser's
+                    memory for the current session and is not saved to any database.
+                </p>
+            </section>
+
+            <section class="content-section">
+                <h2 class="section-title">THIRD-PARTY SERVICES</h2>
+                <p class="content-text">
+                    Our game may use the following third-party services:
+                </p>
+                <ul class="data-list">
+                    <li><span class="highlight">Hosting Services:</span> Our servers are hosted on Render, which may
+                        collect standard server logs including IP addresses for security and operational purposes.</li>
+                    <li><span class="highlight">Advertising:</span> We may display advertisements through Google
+                        AdSense. Google may use cookies and collect data according to their own privacy policy. You can
+                        learn more at <a href="https://policies.google.com/privacy"
+                            style="color: var(--accent);">Google's Privacy Policy</a>.</li>
+                </ul>
+
+                <div class="info-box">
+                    <div class="info-box-title">COOKIES & ADVERTISING</div>
+                    <div class="info-box-text">
+                        Third-party advertisers may use cookies to serve ads based on your visits to this and other
+                        websites. You can opt out of personalized advertising by visiting <a
+                            href="https://www.google.com/settings/ads" style="color: var(--accent);">Google Ads
+                            Settings</a>.
+                    </div>
+                </div>
+            </section>
+
+            <section class="content-section">
+                <h2 class="section-title">DATA SECURITY</h2>
+                <p class="content-text">
+                    We implement reasonable security measures to protect the information transmitted during gameplay.
+                    However, no method of transmission over the internet is 100% secure. We use WebSocket Secure (WSS)
+                    connections to encrypt data in transit.
+                </p>
+            </section>
+
+            <section class="content-section">
+                <h2 class="section-title">YOUR RIGHTS</h2>
+                <p class="content-text">
+                    Since we collect minimal data and do not maintain user accounts, most data rights are automatically
+                    fulfilled:
+                </p>
+                <ul class="data-list">
+                    <li><span class="highlight">Access & Deletion:</span> Session data is automatically deleted when you
+                        leave a match.</li>
+                    <li><span class="highlight">Opt-Out:</span> You can stop using the game at any time.</li>
+                    <li><span class="highlight">Do Not Track:</span> We honor Do Not Track browser settings.</li>
+                </ul>
+            </section>
+
+            <section class="content-section">
+                <h2 class="section-title">CHANGES TO THIS POLICY</h2>
+                <p class="content-text">
+                    We may update this Privacy Policy from time to time. Any changes will be posted on this page with an
+                    updated effective date. We encourage you to review this policy periodically.
+                </p>
+            </section>
+
+            <section class="content-section">
+                <h2 class="section-title">CONTACT US</h2>
+                <p class="content-text">
+                    If you have any questions about this Privacy Policy or our data practices, please contact us through
+                    our <a href="contact.html" style="color: var(--accent);">Contact Page</a>.
+                </p>
+            </section>
+        </div>
+
+        <nav class="footer-nav">
+            <a href="index.html" class="footer-link">Play Now</a>
+            <a href="about.html" class="footer-link">About</a>
+            <a href="terms.html" class="footer-link">Terms of Service</a>
+        </nav>
+    </div>
+</body>
+
+</html>

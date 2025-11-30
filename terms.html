@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service - Ink Wars</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            overflow: auto;
+        }
+
+        .page-container {
+            min-height: 100vh;
+            background: linear-gradient(180deg, var(--bg-dark) 0%, var(--bg-medium) 100%);
+            padding: 40px 20px;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 24px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: var(--accent);
+        }
+
+        .page-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 48px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--red-primary), var(--blue-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 6px;
+            margin-bottom: 16px;
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 16px;
+            letter-spacing: 1px;
+        }
+
+        .effective-date {
+            display: inline-block;
+            padding: 8px 16px;
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 20px;
+            color: var(--accent);
+            font-size: 12px;
+            letter-spacing: 1px;
+            margin-top: 16px;
+        }
+
+        .content-wrapper {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .content-section {
+            background: var(--bg-medium);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 40px;
+            margin-bottom: 24px;
+        }
+
+        .section-number {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            color: var(--accent);
+            letter-spacing: 3px;
+            margin-bottom: 8px;
+            opacity: 0.7;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+
+        .content-text {
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.8;
+            margin-bottom: 16px;
+        }
+
+        .content-text:last-child {
+            margin-bottom: 0;
+        }
+
+        .highlight {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .rules-list {
+            list-style: none;
+            padding: 0;
+            margin: 16px 0;
+        }
+
+        .rules-list li {
+            position: relative;
+            padding-left: 32px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .rules-list li::before {
+            content: attr(data-num);
+            position: absolute;
+            left: 0;
+            top: 0;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            color: var(--accent);
+            background: rgba(255, 215, 0, 0.1);
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .warning-box {
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .warning-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            color: var(--red-primary);
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .warning-text {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .info-box {
+            background: var(--bg-dark);
+            border-left: 3px solid var(--blue-primary);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .info-text {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .footer-nav {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            padding: 40px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            margin-top: 40px;
+        }
+
+        .footer-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .footer-link:hover {
+            color: var(--accent);
+        }
+
+        @media (max-width: 768px) {
+            .page-title {
+                font-size: 32px;
+            }
+
+            .content-section {
+                padding: 24px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page-container">
+        <div class="page-header">
+            <a href="index.html" class="back-link">← Back to Game</a>
+            <h1 class="page-title">TERMS OF SERVICE</h1>
+            <p class="page-subtitle">Rules of engagement</p>
+        </div>
+
+        <div class="content-wrapper">
+            <section class="content-section">
+                <div class="section-number">SECTION 01</div>
+                <h2 class="section-title">ACCEPTANCE OF TERMS</h2>
+                <p class="content-text">
+                    By accessing or playing <span class="highlight">Ink Wars</span>, you agree to be bound by these
+                    Terms of Service. If you do not agree to these terms, please do not use the game.
+                </p>
+                <p class="content-text">
+                    We reserve the right to modify these terms at any time. Continued use of Ink Wars after changes
+                    constitutes acceptance of the updated terms.
+                </p>
+            </section>
+
+            <section class="content-section">
+                <div class="section-number">SECTION 02</div>
+                <h2 class="section-title">DESCRIPTION OF SERVICE</h2>
+                <p class="content-text">
+                    Ink Wars is a free-to-play, browser-based multiplayer drawing game. The service is provided "as is"
+                    and "as available" without warranties of any kind.
+                </p>
+                <p class="content-text">
+                    We reserve the right to modify, suspend, or discontinue the game at any time without prior notice.
+                    We are not liable for any modification, suspension, or discontinuation of the service.
+                </p>
+            </section>
+
+            <section class="content-section">
+                <div class="section-number">SECTION 03</div>
+                <h2 class="section-title">USER CONDUCT</h2>
+                <p class="content-text">
+                    When playing Ink Wars, you agree to conduct yourself appropriately and respect other players. The
+                    following behaviors are prohibited:
+                </p>
+                <ul class="rules-list">
+                    <li data-num="1"><span class="highlight">Offensive Usernames:</span> Do not use usernames that are
+                        vulgar, offensive, discriminatory, or impersonate others.</li>
+                    <li data-num="2"><span class="highlight">Cheating:</span> Do not use hacks, exploits, bots, or any
+                        unauthorized third-party software to gain unfair advantages.</li>
+                    <li data-num="3"><span class="highlight">Harassment:</span> Do not harass, threaten, or abuse other
+                        players through any means.</li>
+                    <li data-num="4"><span class="highlight">Disruption:</span> Do not intentionally disrupt gameplay
+                        for other players or sabotage your own team.</li>
+                    <li data-num="5"><span class="highlight">Exploitation:</span> Do not exploit bugs or glitches.
+                        Report them instead.</li>
+                </ul>
+
+            </section>
+
+            <section class="content-section">
+                <div class="section-number">SECTION 04</div>
+                <h2 class="section-title">INTELLECTUAL PROPERTY</h2>
+                <p class="content-text">
+                    All content within Ink Wars, including but not limited to graphics, game mechanics, visual design,
+                    code, and branding, is owned by the game's creators and protected by intellectual property laws.
+                </p>
+                <p class="content-text">
+                    You may not copy, modify, distribute, sell, or lease any part of the game or its content without
+                    explicit written permission.
+                </p>
+                <div class="info-box">
+                    <div class="info-text">
+                        <span class="highlight">Content Creation:</span> You are welcome to create and share videos,
+                        streams, screenshots, and other content featuring Ink Wars gameplay for personal, non-commercial
+                        purposes.
+                    </div>
+                </div>
+            </section>
+
+            <section class="content-section">
+                <div class="section-number">SECTION 05</div>
+                <h2 class="section-title">DISCLAIMER OF WARRANTIES</h2>
+                <p class="content-text">
+                    Ink Wars is provided on an "AS IS" and "AS AVAILABLE" basis without any warranties, express or
+                    implied. We do not guarantee that the game will be uninterrupted, error-free, or free of viruses or
+                    other harmful components.
+                </p>
+                <p class="content-text">
+                    We make no warranties regarding the accuracy, reliability, or availability of the game or its
+                    servers. Your use of Ink Wars is at your own risk.
+                </p>
+            </section>
+
+            <section class="content-section">
+                <div class="section-number">SECTION 06</div>
+                <h2 class="section-title">LIMITATION OF LIABILITY</h2>
+                <p class="content-text">
+                    To the maximum extent permitted by law, we shall not be liable for any indirect, incidental,
+                    special, consequential, or punitive damages arising from your use of or inability to use Ink Wars.
+                </p>
+                <p class="content-text">
+                    This includes, but is not limited to, damages for loss of data, loss of goodwill, or other
+                    intangible losses, even if we have been advised of the possibility of such damages.
+                </p>
+            </section>
+
+            <section class="content-section">
+                <div class="section-number">SECTION 07</div>
+                <h2 class="section-title">THIRD-PARTY SERVICES</h2>
+                <p class="content-text">
+                    Ink Wars may contain advertisements from third-party ad networks. These third parties may have their
+                    own terms of service and privacy policies. We are not responsible for the content, accuracy, or
+                    practices of third-party services.
+                </p>
+                <p class="content-text">
+                    Links to external websites or services do not imply endorsement. You access third-party services at
+                    your own risk.
+                </p>
+            </section>
+
+            <section class="content-section">
+                <div class="section-number">SECTION 08</div>
+                <h2 class="section-title">TERMINATION</h2>
+                <p class="content-text">
+                    We reserve the right to terminate or restrict your access to Ink Wars at any time, for any reason,
+                    without prior notice or liability. You may stop using the game at any time.
+                </p>
+            </section>
+
+            <section class="content-section">
+                <div class="section-number">SECTION 9</div>
+                <h2 class="section-title">GOVERNING LAW</h2>
+                <p class="content-text">
+                    These Terms of Service shall be governed by and construed in accordance with applicable laws,
+                    without regard to conflict of law principles.
+                </p>
+            </section>
+
+            <section class="content-section">
+                <div class="section-number">SECTION 10</div>
+                <h2 class="section-title">CONTACT</h2>
+                <p class="content-text">
+                    If you have any questions about these Terms of Service, please contact us through our <a
+                        href="contact.html" style="color: var(--accent);">Contact Page</a>.
+                </p>
+            </section>
+        </div>
+
+        <nav class="footer-nav">
+            <a href="index.html" class="footer-link">Play Now</a>
+            <a href="about.html" class="footer-link">About</a>
+            <a href="privacy.html" class="footer-link">Privacy Policy</a>
+        </nav>
+    </div>
+</body>
+
+</html>
