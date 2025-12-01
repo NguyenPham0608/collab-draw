@@ -31,7 +31,7 @@ const PROTECTED_ZONE_RADIUS = 120;
 const SPAWN_ZONE_RADIUS = 60;
 const POINTS_TARGET_REACHED = 100;
 const POINTS_PER_DISTANCE = 0.5;
-const EXPLOSION_RADIUS = 25; // How much of defender line gets destroyed on collision
+const EXPLOSION_RADIUS = 35; // How much of defender line gets destroyed on collision
 
 // Texture Constants
 const TEXTURE_SIZE = 32;
@@ -594,7 +594,7 @@ function getEffectiveInkMax() {
 }
 
 function getEffectiveExplosionRadius() {
-    return activePowerups.includes('biggerBlast') ? EXPLOSION_RADIUS * 1.5 : EXPLOSION_RADIUS;
+    return activePowerups.includes('biggerBlast') ? EXPLOSION_RADIUS * 1.7 : EXPLOSION_RADIUS;
 }
 
 function getEffectiveInkDrainRate() {
