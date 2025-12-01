@@ -33,6 +33,11 @@ const POINTS_TARGET_REACHED = 100;
 const POINTS_PER_DISTANCE = 0.5;
 const EXPLOSION_RADIUS = 25; // How much of defender line gets destroyed on collision
 
+// Texture Constants
+const TEXTURE_SIZE = 32;
+const BRICK_WIDTH = 32;
+const BRICK_HEIGHT = 16;
+
 // Coin & Powerup Constants
 const COIN_RADIUS = 18;
 const COIN_COLLECT_DISTANCE = 25;
@@ -44,6 +49,70 @@ let POWERUPS = {
     biggerBlast: { cost: 5, name: 'Bigger Blast', desc: '+50% explosion radius' },
     speedDraw: { cost: 3, name: 'Speed Draw', desc: 'Ink drains 30% slower' }
 };
+
+// ============================================
+// TEXTURE GENERATION
+// ============================================
+const textureCanvases = {
+    redBrick: null,
+    blueBrick: null
+};
+
+function generateBrickTexture(teamColor) {
+    const canvas = document.createElement('canvas');
+    canvas.width = BRICK_WIDTH;
+    canvas.height = BRICK_HEIGHT;
+    const ctx = canvas.getContext('2d');
+
+    // Colors based on team
+    const isRed = teamColor === 'red';
+    const mainColor = isRed ? '#8B4513' : '#4A6B8A';
+    const darkColor = isRed ? '#5D2E0C' : '#2E4A5F';
+    const lightColor = isRed ? '#A0522D' : '#6B8FAD';
+    const mortarColor = isRed ? '#3D2010' : '#1E2D3A';
+
+    // Draw brick background
+    ctx.fillStyle = mainColor;
+    ctx.fillRect(0, 0, BRICK_WIDTH, BRICK_HEIGHT);
+
+    // Add noise/texture to brick
+    for (let i = 0; i < 20; i++) {
+        const x = Math.random() * BRICK_WIDTH;
+        const y = Math.random() * BRICK_HEIGHT;
+        const size = Math.random() * 3 + 1;
+        ctx.fillStyle = Math.random() > 0.5 ? lightColor : darkColor;
+        ctx.globalAlpha = 0.3;
+        ctx.fillRect(x, y, size, size);
+    }
+    ctx.globalAlpha = 1;
+
+    // Top highlight
+    ctx.fillStyle = lightColor;
+    ctx.globalAlpha = 0.4;
+    ctx.fillRect(0, 0, BRICK_WIDTH, 3);
+    ctx.globalAlpha = 1;
+
+    // Bottom shadow
+    ctx.fillStyle = darkColor;
+    ctx.globalAlpha = 0.5;
+    ctx.fillRect(0, BRICK_HEIGHT - 3, BRICK_WIDTH, 3);
+    ctx.globalAlpha = 1;
+
+    // Mortar lines (edges)
+    ctx.strokeStyle = mortarColor;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, BRICK_WIDTH - 2, BRICK_HEIGHT - 2);
+
+    return canvas;
+}
+
+function initTextures() {
+    textureCanvases.redBrick = generateBrickTexture('red');
+    textureCanvases.blueBrick = generateBrickTexture('blue');
+}
+
+// Initialize textures on load
+initTextures();
 
 // ============================================
 // DOM ELEMENTS
@@ -125,6 +194,7 @@ let fadingLines = []; // { team, points, color, createdAt }
 let attackerPaths = {}; // { odeli: { points, maxDistance } }
 let remoteDrawingPaths = {}; // Track other players' current drawing in progress
 let explosionEffects = []; // Visual explosion effects
+let brickDebris = []; // Flying brick pieces from explosions
 
 // Coin & Powerup state
 let coins = [];
@@ -953,6 +1023,7 @@ function explodeLineAt(linesArray, lineIndex, collisionPoint) {
 
     // Create visual explosion effect
     createExplosionEffect(collisionPoint, explosionRadius);
+    createBrickDebris(collisionPoint, gameState.defendingTeam);
 }
 
 function createExplosionEffect(point, radius = EXPLOSION_RADIUS) {
@@ -965,6 +1036,31 @@ function createExplosionEffect(point, radius = EXPLOSION_RADIUS) {
         startTime: Date.now(),
         duration: 300
     });
+}
+
+function createBrickDebris(point, team) {
+    const debrisCount = 8 + Math.floor(Math.random() * 5);
+
+    for (let i = 0; i < debrisCount; i++) {
+        const angle = (Math.random() * Math.PI * 0.8) - Math.PI * 0.9; // Mostly upward
+        const speed = 150 + Math.random() * 200;
+        const rotationSpeed = (Math.random() - 0.5) * 10;
+
+        brickDebris.push({
+            x: point.x + (Math.random() - 0.5) * 20,
+            y: point.y + (Math.random() - 0.5) * 20,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            rotation: Math.random() * Math.PI * 2,
+            rotationSpeed: rotationSpeed,
+            width: 8 + Math.random() * 12,
+            height: 4 + Math.random() * 8,
+            team: team,
+            gravity: 400 + Math.random() * 100,
+            startTime: Date.now(),
+            lifetime: 1500 + Math.random() * 500
+        });
+    }
 }
 
 function lineIntersectsPath(p1, p2, pathPoints) {
@@ -1105,7 +1201,7 @@ function handleRemoteExplosion(msg) {
 
     // Show the explosion effect
     createExplosionEffect(point);
-
+    createBrickDebris(point, gameState.defendingTeam);
     render();
 }
 
@@ -1300,43 +1396,48 @@ function render() {
     // Draw connecting lines from spawn to show attack direction
     drawAttackDirectionHints();
 
-    // Draw permanent defender lines
+    // Draw permanent defender lines (BRICK TEXTURE)
     for (const line of permanentLines) {
-        drawLine(line.points, line.color, 1);
+        drawBrickLine(line.points, line.team, 1);
     }
 
-    // Draw fading defender lines
+    // Draw fading defender lines (BRICK TEXTURE with fade)
     const now = Date.now();
     for (const line of fadingLines) {
         const age = now - line.createdAt;
         const opacity = 1 - (age / FADING_INK_DURATION);
         if (opacity > 0) {
-            drawLine(line.points, line.color, opacity);
+            drawBrickLine(line.points, line.team, opacity);
         }
     }
 
     // Draw other players' in-progress drawings (REAL-TIME!)
     for (const [playerId, pathData] of Object.entries(remoteDrawingPaths)) {
         if (pathData.points.length > 1) {
-            const color = pathData.team === 'red' ? '#ff4757' : '#3498db';
-            const opacity = pathData.inkType === 'fading' ? 0.6 : 1;
-            drawLine(pathData.points, color, opacity);
+            const isAttacker = pathData.team === gameState.attackingTeam;
+            if (isAttacker) {
+                drawLaserLine(pathData.points, pathData.team, 1);
+            } else {
+                const opacity = pathData.inkType === 'fading' ? 0.6 : 1;
+                drawBrickLine(pathData.points, pathData.team, opacity);
+            }
 
             // Draw active drawing indicator
             const lastPoint = pathData.points[pathData.points.length - 1];
+            const color = pathData.team === 'red' ? '#ff4757' : '#3498db';
             drawActiveDrawingCursor(lastPoint, color);
         }
     }
 
-    // Draw attacker paths (completed)
+    // Draw attacker paths (LASER TEXTURE)
     for (const [playerId, path] of Object.entries(attackerPaths)) {
         const player = gameState.players[playerId];
         if (player && path.points.length > 1) {
-            const color = player.team === 'red' ? '#ff4757' : '#3498db';
-            drawLine(path.points, color, 1);
+            drawLaserLine(path.points, player.team, 1);
 
             // Draw path head (current position indicator)
             const lastPoint = path.points[path.points.length - 1];
+            const color = player.team === 'red' ? '#ff4757' : '#3498db';
             if (playerId !== myId || !isDrawing) {
                 drawPathHead(lastPoint, color, playerId === myId);
             }
@@ -1345,12 +1446,17 @@ function render() {
 
     // Draw current drawing path (my own)
     if (currentPath.length > 1) {
-        const color = myTeam === 'red' ? '#ff4757' : '#3498db';
-        const opacity = inkType === 'fading' ? 0.6 : 1;
-        drawLine(currentPath, color, opacity);
+        const isAttacking = myTeam === gameState.attackingTeam;
+        if (isAttacking) {
+            drawLaserLine(currentPath, myTeam, 1);
+        } else {
+            const opacity = inkType === 'fading' ? 0.6 : 1;
+            drawBrickLine(currentPath, myTeam, opacity);
+        }
 
         // Draw my cursor
         const lastPoint = currentPath[currentPath.length - 1];
+        const color = myTeam === 'red' ? '#ff4757' : '#3498db';
         drawActiveDrawingCursor(lastPoint, color);
     }
 
@@ -1364,6 +1470,229 @@ function render() {
 
     // Draw coin collection effects
     drawCoinCollectEffects();
+    updateAndDrawBrickDebris(1 / 60);
+}
+
+// ============================================
+// BRICK LINE DRAWING (Defender walls)
+// ============================================
+function drawBrickLine(points, team, opacity) {
+    if (points.length < 2) return;
+
+    const brickTexture = team === 'red' ? textureCanvases.redBrick : textureCanvases.blueBrick;
+    const lineThickness = 20; // Thicker than before for brick look
+
+    ctx.save();
+    ctx.globalAlpha = opacity;
+
+    // Calculate total path length and sample points
+    const sampledPoints = samplePointsAlongPath(points, BRICK_WIDTH * 0.7);
+
+    // Draw each brick segment
+    for (let i = 0; i < sampledPoints.length; i++) {
+        const point = sampledPoints[i];
+        const angle = point.angle;
+
+        ctx.save();
+        ctx.translate(point.x, point.y);
+        ctx.rotate(angle);
+
+        // Draw the brick texture centered on the point
+        ctx.drawImage(
+            brickTexture,
+            -BRICK_WIDTH / 2,
+            -BRICK_HEIGHT / 2,
+            BRICK_WIDTH,
+            BRICK_HEIGHT
+        );
+
+        ctx.restore();
+    }
+
+    // Draw mortar/outline glow
+    ctx.globalAlpha = opacity * 0.3;
+    ctx.strokeStyle = team === 'red' ? '#3D2010' : '#1E2D3A';
+    ctx.lineWidth = lineThickness + 4;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x, points[i].y);
+    }
+    ctx.stroke();
+
+    ctx.restore();
+}
+
+// ============================================
+// LASER LINE DRAWING (Attacker paths)
+// ============================================
+function drawLaserLine(points, team, opacity) {
+    if (points.length < 2) return;
+
+    const now = Date.now();
+    const isRed = team === 'red';
+
+    // Colors
+    const coreColor = isRed ? '#ffffff' : '#ffffff';
+    const innerGlow = isRed ? '#ff6b7a' : '#5dade2';
+    const outerGlow = isRed ? '#ff4757' : '#3498db';
+    const electricColor = isRed ? '#ffaaaa' : '#aaddff';
+
+    ctx.save();
+    ctx.globalAlpha = opacity;
+
+    // Layer 1: Outer glow (widest, most transparent)
+    ctx.shadowColor = outerGlow;
+    ctx.shadowBlur = 20;
+    ctx.strokeStyle = outerGlow;
+    ctx.lineWidth = 16;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.globalAlpha = opacity * 0.3;
+    drawPathStroke(points);
+
+    // Layer 2: Middle glow
+    ctx.shadowBlur = 12;
+    ctx.strokeStyle = innerGlow;
+    ctx.lineWidth = 10;
+    ctx.globalAlpha = opacity * 0.6;
+    drawPathStroke(points);
+
+    // Layer 3: Inner bright line
+    ctx.shadowBlur = 8;
+    ctx.strokeStyle = innerGlow;
+    ctx.lineWidth = 6;
+    ctx.globalAlpha = opacity * 0.9;
+    drawPathStroke(points);
+
+    // Layer 4: Core (white hot center)
+    ctx.shadowBlur = 4;
+    ctx.shadowColor = coreColor;
+    ctx.strokeStyle = coreColor;
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = opacity;
+    drawPathStroke(points);
+
+    // Layer 5: Animated energy pulses traveling along the line
+    ctx.shadowBlur = 0;
+    drawEnergyPulses(points, team, now, opacity);
+
+    ctx.restore();
+}
+
+function drawPathStroke(points) {
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x, points[i].y);
+    }
+    ctx.stroke();
+}
+
+function drawEnergyPulses(points, team, now, opacity) {
+    const isRed = team === 'red';
+    const pulseColor = isRed ? '#ffffff' : '#ffffff';
+    const glowColor = isRed ? '#ff4757' : '#3498db';
+
+    // Calculate total path length
+    let totalLength = 0;
+    const segments = [];
+    for (let i = 1; i < points.length; i++) {
+        const len = distance(points[i - 1], points[i]);
+        segments.push({ start: totalLength, length: len, index: i - 1 });
+        totalLength += len;
+    }
+
+    if (totalLength < 10) return;
+
+    // Multiple pulses traveling along the line
+    const pulseCount = 3;
+    const pulseSpeed = 200; // pixels per second
+
+    for (let p = 0; p < pulseCount; p++) {
+        // Calculate pulse position (cycles along the path)
+        const cycleTime = totalLength / pulseSpeed * 1000;
+        const offset = (p / pulseCount) * cycleTime;
+        const pulseProgress = ((now + offset) % cycleTime) / cycleTime;
+        const pulseDistance = pulseProgress * totalLength;
+
+        // Find which segment the pulse is on
+        const pulsePoint = getPointAtDistance(points, segments, pulseDistance);
+        if (!pulsePoint) continue;
+
+        // Draw pulse glow
+        const pulseSize = 8 + Math.sin(now / 100 + p) * 2;
+
+        ctx.beginPath();
+        ctx.arc(pulsePoint.x, pulsePoint.y, pulseSize, 0, Math.PI * 2);
+        const gradient = ctx.createRadialGradient(
+            pulsePoint.x, pulsePoint.y, 0,
+            pulsePoint.x, pulsePoint.y, pulseSize
+        );
+        gradient.addColorStop(0, pulseColor);
+        gradient.addColorStop(0.5, glowColor);
+        gradient.addColorStop(1, 'transparent');
+        ctx.fillStyle = gradient;
+        ctx.globalAlpha = opacity * 0.8;
+        ctx.fill();
+    }
+}
+
+
+function getPointAtDistance(points, segments, targetDistance) {
+    for (const seg of segments) {
+        if (targetDistance >= seg.start && targetDistance < seg.start + seg.length) {
+            const localProgress = (targetDistance - seg.start) / seg.length;
+            const p1 = points[seg.index];
+            const p2 = points[seg.index + 1];
+            return {
+                x: p1.x + (p2.x - p1.x) * localProgress,
+                y: p1.y + (p2.y - p1.y) * localProgress
+            };
+        }
+    }
+    // Return last point if beyond length
+    return points[points.length - 1];
+}
+
+function samplePointsAlongPath(points, spacing) {
+    const sampled = [];
+    let distanceAccum = 0;
+
+    for (let i = 1; i < points.length; i++) {
+        const p1 = points[i - 1];
+        const p2 = points[i];
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const segmentLength = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx);
+
+        let segmentPos = 0;
+
+        while (segmentPos < segmentLength) {
+            const remainingToNext = spacing - distanceAccum;
+
+            if (segmentPos + remainingToNext <= segmentLength) {
+                // We can place a point in this segment
+                segmentPos += remainingToNext;
+                const t = segmentPos / segmentLength;
+                sampled.push({
+                    x: p1.x + dx * t,
+                    y: p1.y + dy * t,
+                    angle: angle
+                });
+                distanceAccum = 0;
+            } else {
+                // Not enough distance left in this segment
+                distanceAccum += segmentLength - segmentPos;
+                break;
+            }
+        }
+    }
+
+    return sampled;
 }
 
 function drawExplosionEffects() {
@@ -1405,6 +1734,50 @@ function drawExplosionEffects() {
         }
 
         return true; // Keep this explosion
+    });
+}
+
+function updateAndDrawBrickDebris(deltaTime) {
+    const now = Date.now();
+
+    brickDebris = brickDebris.filter(debris => {
+        const elapsed = now - debris.startTime;
+        if (elapsed >= debris.lifetime) return false;
+
+        // Update physics
+        debris.vy += debris.gravity * deltaTime;
+        debris.x += debris.vx * deltaTime;
+        debris.y += debris.vy * deltaTime;
+        debris.rotation += debris.rotationSpeed * deltaTime;
+
+        // Remove if off screen
+        if (debris.y > CANVAS_HEIGHT + 50) return false;
+
+        // Calculate opacity (fade out near end of life)
+        const lifeProgress = elapsed / debris.lifetime;
+        const opacity = lifeProgress > 0.7 ? 1 - ((lifeProgress - 0.7) / 0.3) : 1;
+
+        // Draw the brick piece
+        const isRed = debris.team === 'red';
+        const mainColor = isRed ? '#8B4513' : '#4A6B8A';
+        const darkColor = isRed ? '#5D2E0C' : '#2E4A5F';
+
+        ctx.save();
+        ctx.translate(debris.x, debris.y);
+        ctx.rotate(debris.rotation);
+        ctx.globalAlpha = opacity;
+
+        // Brick body
+        ctx.fillStyle = mainColor;
+        ctx.fillRect(-debris.width / 2, -debris.height / 2, debris.width, debris.height);
+
+        // Dark edge for depth
+        ctx.fillStyle = darkColor;
+        ctx.fillRect(-debris.width / 2, debris.height / 4, debris.width, debris.height / 4);
+
+        ctx.restore();
+
+        return true;
     });
 }
 
@@ -1718,6 +2091,7 @@ function drawPathHead(point, color, isMe) {
     }
 }
 
+// Legacy drawLine function (kept for compatibility)
 function drawLine(points, color, opacity) {
     if (points.length < 2) return;
 
