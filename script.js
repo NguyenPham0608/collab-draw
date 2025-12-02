@@ -218,6 +218,7 @@ usernameInput.focus();
 // EVENT LISTENERS
 // ============================================
 findMatchBtn.addEventListener('click', findMatch);
+document.getElementById('practiceBtn').addEventListener('click', startPracticeMode);
 usernameInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') findMatch();
 });
