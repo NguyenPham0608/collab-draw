@@ -1090,9 +1090,9 @@ class Bot {
 
         let currentPos = { ...this.currentPath[this.currentPath.length - 1] };
 
-        // Organic movement parameters
-        let speedPhase = Math.random() * Math.PI * 2;
-        let wobblePhase = Math.random() * Math.PI * 2;
+        // Store current velocity for smooth transitions
+        let currentVelocity = { x: 0, y: 0 };
+        const smoothingFactor = 0.15; // Lower = smoother but slower turns
 
         this.drawInterval = setInterval(() => {
             if (LocalGame.state.phase !== 'attack' || this.ink <= 0 || this.isStunned || LocalGame.roundTargetReached) {
@@ -1110,12 +1110,7 @@ class Bot {
             const dy = waypoint.y - currentPos.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
-            // Variable speed - slower when turning, faster in open stretches
-            speedPhase += 0.04;
-            const speedMultiplier = 0.7 + Math.sin(speedPhase) * 0.5;
-            const currentSpeed = this.drawSpeed * speedMultiplier;
-
-            if (dist < currentSpeed * 2) {
+            if (dist < this.drawSpeed * 3) {
                 this.currentWaypointIndex++;
 
                 const distToTarget = distance(currentPos, { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 });
@@ -1127,15 +1122,22 @@ class Bot {
                 return;
             }
 
-            // Organic squiggly movement
-            wobblePhase += 0.15;
-            const wobbleAmount = 0.15 + Math.sin(wobblePhase * 0.3) * 0.1;
-            const wobble = Math.sin(wobblePhase) * wobbleAmount;
+            // Calculate desired velocity (normalized direction * speed)
+            const desiredVelocity = {
+                x: (dx / dist) * this.drawSpeed,
+                y: (dy / dist) * this.drawSpeed
+            };
 
-            const angle = Math.atan2(dy, dx);
-            const newX = currentPos.x + Math.cos(angle + wobble) * currentSpeed;
-            const newY = currentPos.y + Math.sin(angle + wobble) * currentSpeed;
-            const newPos = { x: newX, y: newY };
+            // Smoothly interpolate current velocity towards desired velocity
+            // This creates eased turns instead of sharp corners
+            currentVelocity.x += (desiredVelocity.x - currentVelocity.x) * smoothingFactor;
+            currentVelocity.y += (desiredVelocity.y - currentVelocity.y) * smoothingFactor;
+
+            // Apply velocity to position
+            const newPos = {
+                x: currentPos.x + currentVelocity.x,
+                y: currentPos.y + currentVelocity.y
+            };
 
             // Check collision
             const collision = this.checkCollision(currentPos, newPos);
