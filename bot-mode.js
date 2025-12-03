@@ -552,13 +552,21 @@ class Bot {
     // DEFENDING BEHAVIOR
     // ============================================
     startDefending() {
-        // Plan circular walls around target
-        this.planDefenseWalls();
-
-        let wallIndex = 0;
+        // Continuous circling state
+        this.defenseState = {
+            angle: Math.random() * Math.PI * 2, // Start at random position
+            baseRadius: PROTECTED_ZONE_RADIUS + (this.spawnIndex * 50),
+            radiusOscillation: 3,
+            speed: 0, // Start at 0, will accelerate
+            targetSpeed: 0.395,
+            wobblePhase: Math.random() * Math.PI * 2,
+            direction: this.spawnIndex === 0 ? 1 : -1, // Opposite directions
+            lastDrawTime: 0
+        };
 
         this.updateInterval = setInterval(() => {
             if (LocalGame.state.phase !== 'defense') {
+                this.finishDefenseWall(this.currentInkType || 'permanent');
                 this.stop();
                 return;
             }
@@ -568,12 +576,78 @@ class Bot {
                 this.ink = Math.min(INK_MAX, this.ink + INK_REGEN_RATE / 60);
             }
 
-            // Start drawing next wall if ready
-            if (!this.isDrawing && this.ink > 40 && wallIndex < this.targetWaypoints.length) {
-                this.drawDefenseWall(this.targetWaypoints[wallIndex]);
-                wallIndex++;
+            // Start drawing when we have enough ink
+            if (!this.isDrawing && this.ink > 30) {
+                this.startContinuousDefense();
             }
         }, 100);
+    }
+    startContinuousDefense() {
+        if (this.isDrawing) return;
+
+        this.isDrawing = true;
+        this.currentPath = [];
+        this.currentInkType = Math.random() > 0.75 ? 'fading' : 'permanent';
+
+        const drainMultiplier = this.currentInkType === 'fading' ? FADING_INK_COST_MULTIPLIER : 1;
+        const state = this.defenseState;
+        const targetX = CANVAS_WIDTH / 2;
+        const targetY = CANVAS_HEIGHT / 2;
+
+        this.drawInterval = setInterval(() => {
+            if (LocalGame.state.phase !== 'defense') {
+                this.finishDefenseWall(this.currentInkType);
+                return;
+            }
+
+            // Smooth deceleration when ink is low
+            if (this.ink <= 15) {
+                state.targetSpeed = 0;
+            } else {
+                state.targetSpeed = 0.02 + Math.sin(Date.now() * 0.001) * 0.008;
+            }
+
+            // Smooth acceleration/deceleration
+            const speedDiff = state.targetSpeed - state.speed;
+            state.speed += speedDiff * 0.05; // Gradual speed change
+
+            // Stop drawing smoothly when speed is near zero and ink is low
+            if (state.speed < 0.002 && this.ink <= 15) {
+                this.finishDefenseWall(this.currentInkType);
+                return;
+            }
+
+            // Update angle with current speed
+            state.angle += state.speed * state.direction;
+
+            // Organic radius changes - slowly drift in and out
+            state.radiusOscillation += 0.008;
+            const radiusDrift = Math.sin(state.radiusOscillation) * 25;
+            const spiralDrift = Math.sin(state.angle * 0.3) * 15; // Slight spiral effect
+
+            // Hand wobble
+            state.wobblePhase += 0.1 + state.speed * 2;
+            const wobble = Math.sin(state.wobblePhase) * this.wobbleAmount * 2;
+
+            const currentRadius = state.baseRadius + radiusDrift + spiralDrift + wobble;
+
+            // Calculate position
+            const x = targetX + Math.cos(state.angle) * currentRadius;
+            const y = targetY + Math.sin(state.angle) * currentRadius;
+
+            this.currentPath.push({ x, y });
+
+            // Drain ink based on actual speed (slower = less drain)
+            const effectiveDrain = (INK_DRAIN_RATE / 60) * drainMultiplier * (state.speed / 0.025);
+            this.ink -= effectiveDrain;
+
+            // Update visualization
+            if (!remoteDrawingPaths[this.id]) {
+                remoteDrawingPaths[this.id] = { points: [], team: this.team, inkType: this.currentInkType };
+            }
+            remoteDrawingPaths[this.id].points = [...this.currentPath];
+
+        }, 1000 / 60);
     }
 
     planDefenseWalls() {
@@ -582,28 +656,66 @@ class Bot {
         const targetX = CANVAS_WIDTH / 2;
         const targetY = CANVAS_HEIGHT / 2;
 
-        // Each bot draws 1-2 full circles at different radii
-        const numCircles = 1 + Math.floor(Math.random() * 2);
+        // Mix of different wall types based on personality
+        const strategies = this.personality === 'aggressive'
+            ? ['arc', 'arc', 'wall']
+            : this.personality === 'cautious'
+                ? ['circle', 'arc', 'arc']
+                : ['arc', 'circle', 'wall'];
 
-        for (let i = 0; i < numCircles; i++) {
-            // Different radius based on spawn index and circle number
-            // spawnIndex 0 = inner circles, spawnIndex 1 = outer circles
-            const baseRadius = PROTECTED_ZONE_RADIUS + 50 + (this.spawnIndex * 70) + (i * 60);
+        for (let i = 0; i < strategies.length; i++) {
+            const strategy = strategies[i];
+            const baseRadius = PROTECTED_ZONE_RADIUS + 40 + (this.spawnIndex * 60) + (i * 50);
 
-            // Random starting angle so circles don't all start at same point
-            const startAngle = Math.random() * Math.PI * 2;
+            if (strategy === 'circle') {
+                // Full protective circle with slight eccentricity
+                const startAngle = Math.random() * Math.PI * 2;
+                const eccentricity = 0.9 + Math.random() * 0.2; // Slightly oval
+                this.targetWaypoints.push({
+                    type: 'circle',
+                    centerX: targetX + (Math.random() - 0.5) * 20,
+                    centerY: targetY + (Math.random() - 0.5) * 20,
+                    radius: baseRadius,
+                    eccentricity: eccentricity,
+                    startAngle: startAngle,
+                    endAngle: startAngle + Math.PI * 2.05,
+                    inkType: Math.random() > 0.8 ? 'fading' : 'permanent'
+                });
+            } else if (strategy === 'arc') {
+                // Partial arc covering one side
+                const side = (this.spawnIndex + i) % 4;
+                const baseAngle = (side / 4) * Math.PI * 2;
+                const arcLength = Math.PI * (0.4 + Math.random() * 0.4); // 70-140 degree arc
+                this.targetWaypoints.push({
+                    type: 'arc',
+                    centerX: targetX,
+                    centerY: targetY,
+                    radius: baseRadius + (Math.random() - 0.5) * 30,
+                    startAngle: baseAngle - arcLength / 2,
+                    endAngle: baseAngle + arcLength / 2,
+                    inkType: Math.random() > 0.6 ? 'fading' : 'permanent'
+                });
+            } else if (strategy === 'wall') {
+                // Straight-ish wall blocking an attack corridor
+                const enemyTeam = this.team === 'red' ? 'blue' : 'red';
+                const enemyX = enemyTeam === 'red' ? 80 : CANVAS_WIDTH - 80;
+                const angle = Math.atan2(targetY - CANVAS_HEIGHT / 2, targetX - enemyX);
 
-            // Full circle (2 * PI) plus a tiny bit of overlap
-            const endAngle = startAngle + Math.PI * 2.05;
+                // Wall perpendicular to attack direction
+                const wallDist = PROTECTED_ZONE_RADIUS + 60 + Math.random() * 40;
+                const wallCenterX = targetX + Math.cos(angle + Math.PI) * wallDist;
+                const wallCenterY = targetY + Math.sin(angle + Math.PI) * wallDist;
+                const wallLength = 80 + Math.random() * 60;
 
-            this.targetWaypoints.push({
-                centerX: targetX,
-                centerY: targetY,
-                radius: baseRadius,
-                startAngle: startAngle,
-                endAngle: endAngle,
-                inkType: Math.random() > 0.75 ? 'fading' : 'permanent'
-            });
+                this.targetWaypoints.push({
+                    type: 'wall',
+                    startX: wallCenterX + Math.cos(angle + Math.PI / 2) * wallLength / 2,
+                    startY: wallCenterY + Math.sin(angle + Math.PI / 2) * wallLength / 2,
+                    endX: wallCenterX + Math.cos(angle - Math.PI / 2) * wallLength / 2,
+                    endY: wallCenterY + Math.sin(angle - Math.PI / 2) * wallLength / 2,
+                    inkType: 'permanent'
+                });
+            }
         }
     }
 
@@ -614,16 +726,87 @@ class Bot {
         const inkType = wallPlan.inkType;
         const drainMultiplier = inkType === 'fading' ? FADING_INK_COST_MULTIPLIER : 1;
 
-        const { centerX, centerY, radius, startAngle, endAngle } = wallPlan;
-        const totalAngle = endAngle - startAngle;
+        if (wallPlan.type === 'wall') {
+            this.drawStraightWall(wallPlan, inkType, drainMultiplier);
+        } else {
+            this.drawCurvedWall(wallPlan, inkType, drainMultiplier);
+        }
+    }
 
-        let currentAngle = startAngle;
+    drawStraightWall(wallPlan, inkType, drainMultiplier) {
+        const { startX, startY, endX, endY } = wallPlan;
+        const dx = endX - startX;
+        const dy = endY - startY;
+        const totalDist = Math.sqrt(dx * dx + dy * dy);
 
-        // Speed variation parameters
-        let speedPhase = Math.random() * Math.PI * 2; // Random starting phase
-        const baseAngularSpeed = 0.025; // Base speed in radians per frame
+        let progress = 0;
+        let wobblePhase = Math.random() * Math.PI * 2;
+        let pauseUntil = 0;
 
         this.drawInterval = setInterval(() => {
+            const now = Date.now();
+
+            // Random micro-pauses (like a human hesitating)
+            if (now < pauseUntil) return;
+            if (Math.random() < 0.005) {
+                pauseUntil = now + 50 + Math.random() * 150;
+                return;
+            }
+
+            if (LocalGame.state.phase !== 'defense' || this.ink <= 0) {
+                this.finishDefenseWall(inkType);
+                return;
+            }
+
+            if (progress >= totalDist) {
+                this.finishDefenseWall(inkType);
+                return;
+            }
+
+            // Variable speed
+            const speed = (3 + Math.sin(progress * 0.05) * 1.5) * (0.8 + Math.random() * 0.4);
+            progress += speed;
+
+            const t = Math.min(progress / totalDist, 1);
+
+            // Add perpendicular wobble (hand tremor)
+            wobblePhase += 0.15 + Math.random() * 0.1;
+            const wobbleAmount = Math.sin(wobblePhase) * this.wobbleAmount * 2;
+            const perpX = -dy / totalDist;
+            const perpY = dx / totalDist;
+
+            const x = startX + dx * t + perpX * wobbleAmount;
+            const y = startY + dy * t + perpY * wobbleAmount;
+
+            this.currentPath.push({ x, y });
+            this.ink -= (INK_DRAIN_RATE / 60) * drainMultiplier;
+
+            if (!remoteDrawingPaths[this.id]) {
+                remoteDrawingPaths[this.id] = { points: [], team: this.team, inkType: inkType };
+            }
+            remoteDrawingPaths[this.id].points = [...this.currentPath];
+
+        }, 1000 / 60);
+    }
+
+    drawCurvedWall(wallPlan, inkType, drainMultiplier) {
+        const { centerX, centerY, radius, startAngle, endAngle, eccentricity = 1 } = wallPlan;
+
+        let currentAngle = startAngle;
+        let wobblePhase = Math.random() * Math.PI * 2;
+        let radiusWobble = 0;
+        let pauseUntil = 0;
+
+        this.drawInterval = setInterval(() => {
+            const now = Date.now();
+
+            // // Random micro-pauses
+            // if (now < pauseUntil) return;
+            // if (Math.random() < 0.008) {
+            //     pauseUntil = now + 30 + Math.random() * 120;
+            //     return;
+            // }
+
             if (LocalGame.state.phase !== 'defense' || this.ink <= 0) {
                 this.finishDefenseWall(inkType);
                 return;
@@ -634,22 +817,30 @@ class Bot {
                 return;
             }
 
-            // Variable speed - oscillates between 0.5x and 1.5x base speed
-            speedPhase += 0.08;
-            const speedMultiplier = 1 + Math.sin(speedPhase) * 0.5;
-            const angularSpeed = baseAngularSpeed * speedMultiplier;
-
-            // Calculate position on circle
-            const x = centerX + Math.cos(currentAngle) * radius;
-            const y = centerY + Math.sin(currentAngle) * radius;
-
-            this.currentPath.push({ x, y });
+            // Variable angular speed (faster on straighter parts)
+            const speedVariation = 1 + Math.sin(currentAngle * 3) * 0.3;
+            const baseSpeed = 0.02 + Math.random() * 0.015;
+            const angularSpeed = baseSpeed * speedVariation;
             currentAngle += angularSpeed;
 
-            // Drain ink based on actual speed (faster = more drain)
-            this.ink -= (INK_DRAIN_RATE / 60) * drainMultiplier * speedMultiplier;
+            // Wobble in radius (hand tremor pushing in/out)
+            wobblePhase += 0.12 + Math.random() * 0.08;
+            radiusWobble += (Math.sin(wobblePhase) * this.wobbleAmount * 3 - radiusWobble) * 0.1;
 
-            // Update remote drawing paths for visualization
+            // Slow drift in radius (natural imperfection)
+            const driftRadius = radius + Math.sin(currentAngle * 0.5) * 8;
+            const finalRadius = driftRadius + radiusWobble;
+
+            // Apply eccentricity for oval shapes
+            const xRadius = finalRadius;
+            const yRadius = finalRadius * eccentricity;
+
+            const x = centerX + Math.cos(currentAngle) * xRadius;
+            const y = centerY + Math.sin(currentAngle) * yRadius;
+
+            this.currentPath.push({ x, y });
+            this.ink -= (INK_DRAIN_RATE / 60) * drainMultiplier * speedVariation;
+
             if (!remoteDrawingPaths[this.id]) {
                 remoteDrawingPaths[this.id] = { points: [], team: this.team, inkType: inkType };
             }
@@ -659,13 +850,16 @@ class Bot {
     }
 
     finishDefenseWall(inkType) {
-        clearInterval(this.drawInterval);
-        this.drawInterval = null;
+        if (this.drawInterval) {
+            clearInterval(this.drawInterval);
+            this.drawInterval = null;
+        }
         this.isDrawing = false;
 
         // Clear remote drawing path
         delete remoteDrawingPaths[this.id];
 
+        // Save the drawn path if it has enough points
         if (this.currentPath.length >= 2) {
             const lineData = {
                 team: this.team,
@@ -681,6 +875,11 @@ class Bot {
         }
 
         this.currentPath = [];
+
+        // Reset speed for smooth restart
+        if (this.defenseState) {
+            this.defenseState.speed = 0;
+        }
     }
 
     // ============================================
