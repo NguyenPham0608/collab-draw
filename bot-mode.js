@@ -469,6 +469,8 @@ class Bot {
         // Behavior timers
         this.updateInterval = null;
         this.drawInterval = null;
+        // Path replanning timer
+        this.lastRePlanTime = 0;
 
         // Personality settings
         this.setPersonalityTraits();
@@ -477,20 +479,20 @@ class Bot {
     setPersonalityTraits() {
         switch (this.personality) {
             case 'aggressive':
-                this.drawSpeed = 4.5; // pixels per frame
+                this.drawSpeed = 5.5; // pixels per frame
                 this.reactionTime = 100; // ms
                 this.wobbleAmount = 1.5;
                 this.riskTolerance = 0.8;
                 break;
             case 'cautious':
-                this.drawSpeed = 2.5;
+                this.drawSpeed = 3.5;
                 this.reactionTime = 200;
                 this.wobbleAmount = 1;
                 this.riskTolerance = 0.3;
                 break;
             case 'balanced':
             default:
-                this.drawSpeed = 3.5;
+                this.drawSpeed = 4.5;
                 this.reactionTime = 150;
                 this.wobbleAmount = 1.2;
                 this.riskTolerance = 0.5;
@@ -710,13 +712,15 @@ class Bot {
             if (this.isStunned) {
                 if (Date.now() > this.stunEndTime) {
                     this.isStunned = false;
-                    // Re-plan path after stun (walls may have holes now!)
-                    setTimeout(() => {
-                        if (LocalGame.state.phase === 'attack') {
-                            this.planAttackPath();
-                            this.startDrawingAttack();
-                        }
-                    }, 300);
+                    // Re-plan path immediately after stun (walls have new holes!)
+                    if (LocalGame.state.phase === 'attack') {
+                        this.planAttackPath();
+                        setTimeout(() => {
+                            if (LocalGame.state.phase === 'attack' && !this.isStunned) {
+                                this.startDrawingAttack();
+                            }
+                        }, 10);
+                    }
                 }
                 return;
             }
@@ -904,16 +908,16 @@ class Bot {
                 const moveCost = (dr !== 0 && dc !== 0) ? 1.414 : 1;
                 const cellCost = grid[newRow][newCol];
 
-                // Bias: prefer moving perpendicular to direct path (creates meandering)
+                // Slight bias toward direct path (reduces unnecessary curves)
                 const directAngle = Math.atan2(eRow - sRow, eCol - sCol);
                 const moveAngle = Math.atan2(dr, dc);
                 let angleDiff = Math.abs(directAngle - moveAngle);
                 if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
 
-                // Reward perpendicular movement slightly (makes path curve)
-                const perpendicularBonus = Math.abs(Math.sin(angleDiff)) * 0.3;
+                // Small penalty for deviating from direct path
+                const directnessPenalty = Math.abs(Math.sin(angleDiff)) * 0.1;
 
-                const totalCost = moveCost + cellCost - perpendicularBonus;
+                const totalCost = moveCost + cellCost + directnessPenalty;
 
                 const newDist = dist[currentKey] + totalCost;
 
@@ -1007,22 +1011,23 @@ class Bot {
         const totalDist = Math.sqrt(dx * dx + dy * dy);
 
         // Generate 1-3 intermediate waypoints that curve the path
-        const numWaypoints = 1 + Math.floor(Math.random() * 2);
+        // Generate 0-1 intermediate waypoints for smoother paths
+        const numWaypoints = Math.random() > 0.7 ? 1 : 0; // 30% chance of one waypoint
 
         for (let i = 0; i < numWaypoints; i++) {
-            // Progress along direct path (spread waypoints out)
-            const t = (i + 1) / (numWaypoints + 1);
+            // Place waypoint at midpoint
+            const t = 0.5;
 
             // Base position along direct line
             let wpX = start.x + dx * t;
             let wpY = start.y + dy * t;
 
-            // Offset perpendicular to the direct path (creates curve)
+            // Smaller offset perpendicular to find gaps
             const perpAngle = Math.atan2(dy, dx) + Math.PI / 2;
 
-            // Alternate sides and vary offset amount based on bot personality
+            // Smaller, more strategic offset
             const side = (i + this.spawnIndex) % 2 === 0 ? 1 : -1;
-            const offsetAmount = (80 + Math.random() * 120) * side;
+            const offsetAmount = (30 + Math.random() * 50) * side; // Reduced from 80-200 to 30-80
 
             wpX += Math.cos(perpAngle) * offsetAmount;
             wpY += Math.sin(perpAngle) * offsetAmount;
@@ -1090,11 +1095,41 @@ class Bot {
 
         let currentPos = { ...this.currentPath[this.currentPath.length - 1] };
 
+        // Add initial random direction variance (±90 degrees from target)
+        if (this.currentPath.length === 1) {
+            const targetX = CANVAS_WIDTH / 2;
+            const targetY = CANVAS_HEIGHT / 2;
+            const angleToTarget = Math.atan2(targetY - currentPos.y, targetX - currentPos.x);
+
+            // Random angle within ±90 degrees (±PI/2 radians)
+            const randomOffset = (Math.random() - 0.5) * Math.PI; // ±90 degrees
+            const initialAngle = angleToTarget + randomOffset;
+
+            this.planAttackPath();
+        }
+
         // Store current velocity for smooth transitions
         let currentVelocity = { x: 0, y: 0 };
         const smoothingFactor = 0.15; // Lower = smoother but slower turns
 
         this.drawInterval = setInterval(() => {
+            // Re-plan path periodically if walls have changed (check every 60 frames = ~1 second)
+            if (!this.lastRePlanTime) this.lastRePlanTime = Date.now();
+            if (Date.now() - this.lastRePlanTime > 1000) {
+                this.lastRePlanTime = Date.now();
+                // Save current position
+                const savedPos = { ...currentPos };
+                const savedPath = [...this.currentPath];
+                // Re-plan from current position
+                this.planAttackPath();
+                // If new path is available, use it; otherwise keep current
+                if (this.targetWaypoints.length > 0) {
+                    this.currentWaypointIndex = 0;
+                    // Keep the path we've already drawn
+                    this.currentPath = savedPath;
+                    currentPos = savedPos;
+                }
+            }
             if (LocalGame.state.phase !== 'attack' || this.ink <= 0 || this.isStunned || LocalGame.roundTargetReached) {
                 this.pauseDrawing();
                 return;
@@ -1249,6 +1284,19 @@ class Bot {
         this.isStunned = true;
         this.stunEndTime = Date.now() + STUN_DURATION;
         this.resetPath();
+
+        // Teleport back to spawn point
+        this.currentPath = [{ ...this.spawnPoint }];
+        if (attackerPaths[this.id]) {
+            attackerPaths[this.id].points = [{ ...this.spawnPoint }];
+        }
+
+        // Schedule replan after stun ends
+        setTimeout(() => {
+            if (LocalGame.state.phase === 'attack' && !this.isStunned) {
+                this.planAttackPath();
+            }
+        }, STUN_DURATION + 100);
     }
 
     checkCoinCollection(pos) {

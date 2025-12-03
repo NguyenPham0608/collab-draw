@@ -17,7 +17,7 @@ function safeSend(data) {
 // ============================================
 const CANVAS_WIDTH = 1000;
 const CANVAS_HEIGHT = 650;
-const DEFENSE_PHASE_DURATION = 15;
+const DEFENSE_PHASE_DURATION = 5;
 const ATTACK_PHASE_DURATION = 30;
 const STUN_DURATION = 2000;
 const INK_MAX = 100;
